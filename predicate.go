@@ -7,15 +7,15 @@ const (
 )
 
 type Predicate struct {
-	field    string
-	operator string
-	values   []interface{}
+	Field    string
+	Operator string
+	Values   []interface{}
 }
 
 func NewPredicate(field string, operator string, values []interface{}) *Predicate {
-	return &Predicate{field: field, operator: operator, values: values}
+	return &Predicate{Field: field, Operator: operator, Values: values}
 }
 
 func (p *Predicate) IsOperator(operator string) bool {
-	return p.operator == operator
+	return p.Operator == operator
 }

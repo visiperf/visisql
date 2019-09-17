@@ -37,19 +37,19 @@ func (ss *SqlService) List(identifier string, fields []string, from string, join
 
 	for _, p := range predicates {
 		if p.IsOperator(OperatorIn) {
-			builder.Where(builder.In(p.field, p.values...))
+			builder.Where(builder.In(p.Field, p.Values...))
 		}
 		if p.IsOperator(OperatorEqual) {
-			if len(p.values) != 1 {
+			if len(p.Values) != 1 {
 				return fmt.Errorf(`predicate must have only one value when operator is equal`)
 			}
-			builder.Where(builder.Equal(p.field, p.values[0]))
+			builder.Where(builder.Equal(p.Field, p.Values[0]))
 		}
 		if p.IsOperator(OperatorLike) {
-			if len(p.values) != 1 {
+			if len(p.Values) != 1 {
 				return fmt.Errorf(`predicate must have only one value when operator is like`)
 			}
-			builder.Where(builder.Like(p.field, p.values[0]))
+			builder.Where(builder.Like(p.Field, p.Values[0]))
 		}
 	}
 
@@ -111,19 +111,19 @@ func (ss *SqlService) Get(identifier string, fields []string, from string, joins
 
 	for _, p := range predicates {
 		if p.IsOperator(OperatorIn) {
-			builder.Where(builder.In(p.field, p.values...))
+			builder.Where(builder.In(p.Field, p.Values...))
 		}
 		if p.IsOperator(OperatorEqual) {
-			if len(p.values) != 1 {
+			if len(p.Values) != 1 {
 				return fmt.Errorf(`predicate must have only one value when operator is equal`)
 			}
-			builder.Where(builder.Equal(p.field, p.values[0]))
+			builder.Where(builder.Equal(p.Field, p.Values[0]))
 		}
 		if p.IsOperator(OperatorLike) {
-			if len(p.values) != 1 {
+			if len(p.Values) != 1 {
 				return fmt.Errorf(`predicate must have only one value when operator is like`)
 			}
-			builder.Where(builder.Like(p.field, p.values[0]))
+			builder.Where(builder.Like(p.Field, p.Values[0]))
 		}
 	}
 
@@ -197,19 +197,19 @@ func (ss *SqlService) Update(tableName string, set map[string]interface{}, predi
 
 	for _, p := range predicates {
 		if p.IsOperator(OperatorIn) {
-			builder.Where(builder.In(p.field, p.values...))
+			builder.Where(builder.In(p.Field, p.Values...))
 		}
 		if p.IsOperator(OperatorEqual) {
-			if len(p.values) != 1 {
+			if len(p.Values) != 1 {
 				return fmt.Errorf(`predicate must have only one value when operator is equal`)
 			}
-			builder.Where(builder.Equal(p.field, p.values[0]))
+			builder.Where(builder.Equal(p.Field, p.Values[0]))
 		}
 		if p.IsOperator(OperatorLike) {
-			if len(p.values) != 1 {
+			if len(p.Values) != 1 {
 				return fmt.Errorf(`predicate must have only one value when operator is like`)
 			}
-			builder.Where(builder.Like(p.field, p.values[0]))
+			builder.Where(builder.Like(p.Field, p.Values[0]))
 		}
 	}
 
@@ -230,19 +230,19 @@ func (ss *SqlService) Delete(from string, predicates []*Predicate) error {
 
 	for _, p := range predicates {
 		if p.IsOperator(OperatorIn) {
-			builder.Where(builder.In(p.field, p.values...))
+			builder.Where(builder.In(p.Field, p.Values...))
 		}
 		if p.IsOperator(OperatorEqual) {
-			if len(p.values) != 1 {
+			if len(p.Values) != 1 {
 				return fmt.Errorf(`predicate must have only one value when operator is equal`)
 			}
-			builder.Where(builder.Equal(p.field, p.values[0]))
+			builder.Where(builder.Equal(p.Field, p.Values[0]))
 		}
 		if p.IsOperator(OperatorLike) {
-			if len(p.values) != 1 {
+			if len(p.Values) != 1 {
 				return fmt.Errorf(`predicate must have only one value when operator is like`)
 			}
-			builder.Where(builder.Like(p.field, p.values[0]))
+			builder.Where(builder.Like(p.Field, p.Values[0]))
 		}
 	}
 
