@@ -1,21 +1,23 @@
 package visisql
 
+type Operator string
+
 const (
-	OperatorIn    string = "IN"
-	OperatorEqual string = "EQUALS"
-	OperatorLike  string = "LIKE"
+	OperatorIn    Operator = "IN"
+	OperatorEqual Operator = "EQUALS"
+	OperatorLike  Operator = "LIKE"
 )
 
 type Predicate struct {
 	Field    string
-	Operator string
+	Operator Operator
 	Values   []interface{}
 }
 
-func NewPredicate(field string, operator string, values []interface{}) *Predicate {
+func NewPredicate(field string, operator Operator, values []interface{}) *Predicate {
 	return &Predicate{Field: field, Operator: operator, Values: values}
 }
 
-func (p *Predicate) IsOperator(operator string) bool {
+func (p *Predicate) IsOperator(operator Operator) bool {
 	return p.Operator == operator
 }
