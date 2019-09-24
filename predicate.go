@@ -9,9 +9,9 @@ const (
 )
 
 type Predicate struct {
-	Field    string
-	Operator Operator
-	Values   []interface{}
+	Field    string        `json:"field"`
+	Operator Operator      `json:"operator"`
+	Values   []interface{} `json:"values"`
 }
 
 func NewPredicate(field string, operator Operator, values []interface{}) *Predicate {

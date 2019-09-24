@@ -1,8 +1,8 @@
 package visisql
 
 type Mutation struct {
-	Set        map[string]interface{}
-	Predicates []*Predicate
+	Set        map[string]interface{} `json:"set"`
+	Predicates []*Predicate           `json:"predicates"`
 }
 
 func NewMutation(set map[string]interface{}, predicates []*Predicate) *Mutation {
