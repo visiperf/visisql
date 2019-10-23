@@ -248,9 +248,9 @@ func (ss *SqlService) Delete(from string, predicates []*Predicate) error {
 
 	query, args := builder.Build()
 
-	row := ss.db.QueryRow(query, args...)
-	if row == nil {
-		return fmt.Errorf("row is nil")
+	_, err := ss.db.Exec(query, args...)
+	if err != nil {
+		return err
 	}
 
 	return nil
