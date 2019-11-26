@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/mitchellh/mapstructure"
 	"reflect"
 )
 
@@ -280,33 +281,10 @@ func (ss *SqlService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
 }
 
 func (ss *SqlService) hydrateStruct(data map[string]interface{}, v interface{}) error {
-	fields := reflect.ValueOf(v).Elem()
-
-	for i := 0; i < fields.NumField(); i++ {
-		field := fields.Field(i)
-
-		if field.Kind() == reflect.Struct {
-			if err := ss.hydrateStruct(data, field.Addr().Interface()); err != nil {
-				return err
-			}
-		} else {
-			if !field.CanSet() {
-				return fmt.Errorf("cannot set field %d", i)
-			}
-
-			tag := fields.Type().Field(i).Tag.Get("sql")
-
-			if _, ok := data[tag]; ok {
-				if val := reflect.ValueOf(data[tag]); val.IsValid() {
-					if field.Type() != val.Type() {
-						return fmt.Errorf("provided value type didn't match obj field type, expected %s - actual %s", field.Type().String(), val.Type().String())
-					}
-
-					field.Set(val)
-				}
-			}
-		}
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "sql", Result: v})
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return decoder.Decode(data)
 }
