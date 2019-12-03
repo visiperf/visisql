@@ -17,6 +17,9 @@ func NewSqlService(db *sql.DB) *SqlService {
 	return &SqlService{db: db}
 }
 
+// @todo: create func (ss *SqlService) Query(query string, args []interface{}, v interface{}) error
+// @todo: create func (ss *SqlService) QueryRow(query string, args []interface{}, v interface{}) error
+
 func (ss *SqlService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) error {
 	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
@@ -199,6 +202,7 @@ func (ss *SqlService) Create(into string, values map[string]interface{}) (interf
 	return id, nil
 }
 
+// @todo: set predicates type [][]*Predicate
 func (ss *SqlService) Update(table string, set map[string]interface{}, predicates []*Predicate) error {
 	builder := sqlbuilder.PostgreSQL.NewUpdateBuilder()
 
@@ -239,6 +243,7 @@ func (ss *SqlService) Update(table string, set map[string]interface{}, predicate
 	return nil
 }
 
+// @todo: set predicates type [][]*Predicate
 func (ss *SqlService) Delete(from string, predicates []*Predicate) error {
 	builder := sqlbuilder.PostgreSQL.NewDeleteBuilder()
 
