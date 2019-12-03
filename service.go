@@ -17,7 +17,7 @@ func NewSqlService(db *sql.DB) *SqlService {
 	return &SqlService{db: db}
 }
 
-func (ss *SqlService) List(identifier string, fields []string, from string, joins []*Join, predicates [][]*Predicate, orderBy []*OrderBy, start int64, limit int64, v interface{}) error {
+func (ss *SqlService) List(identifier string, fields []string, from string, joins []*Join, predicates [][]*Predicate, orderBy []*OrderBy, pagination *Pagination, limit int64, v interface{}) error {
 	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
 	var sCount = "1"
@@ -70,8 +70,8 @@ func (ss *SqlService) List(identifier string, fields []string, from string, join
 	}
 	builder.OrderBy(ob...)
 
-	if start != 0 {
-		builder.Offset(int(start))
+	if pagination != nil {
+		builder.Offset(pagination.Start)
 	}
 
 	if limit != 0 {
