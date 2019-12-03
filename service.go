@@ -104,7 +104,7 @@ func (ss *SqlService) List(fields []string, from string, joins []*Join, predicat
 	return nil
 }
 
-func (ss *SqlService) Get(identifier string, fields []string, from string, joins []*Join, predicates [][]*Predicate, v interface{}) error {
+func (ss *SqlService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
 	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
 	builder.Select(fields...)
@@ -143,7 +143,7 @@ func (ss *SqlService) Get(identifier string, fields []string, from string, joins
 		builder.Where(fmt.Sprintf("( %s )", strings.Join(orExprs, " OR ")))
 	}
 
-	builder.GroupBy(identifier)
+	builder.GroupBy(groupBy...)
 
 	query, args := builder.Build()
 
