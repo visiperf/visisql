@@ -17,7 +17,7 @@ func NewSqlService(db *sql.DB) *SqlService {
 	return &SqlService{db: db}
 }
 
-func (ss *SqlService) List(identifier string, fields []string, from string, joins []*Join, predicates [][]*Predicate, orderBy map[string]string, start int64, limit int64, v interface{}) error {
+func (ss *SqlService) List(identifier string, fields []string, from string, joins []*Join, predicates [][]*Predicate, orderBy []*OrderBy, start int64, limit int64, v interface{}) error {
 	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
 	var sCount = "1"
@@ -65,8 +65,8 @@ func (ss *SqlService) List(identifier string, fields []string, from string, join
 	builder.GroupBy(identifier)
 
 	var ob []string
-	for f, v := range orderBy {
-		ob = append(ob, fmt.Sprintf("%s %s", f, v))
+	for _, o := range orderBy {
+		ob = append(ob, o.toString())
 	}
 	builder.OrderBy(ob...)
 
