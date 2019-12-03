@@ -199,10 +199,10 @@ func (ss *SqlService) Create(into string, values map[string]interface{}) (interf
 	return id, nil
 }
 
-func (ss *SqlService) Update(tableName string, set map[string]interface{}, predicates []*Predicate) error {
+func (ss *SqlService) Update(table string, set map[string]interface{}, predicates []*Predicate) error {
 	builder := sqlbuilder.PostgreSQL.NewUpdateBuilder()
 
-	builder.Update(tableName)
+	builder.Update(table)
 
 	var str []string
 	for f, v := range set {
