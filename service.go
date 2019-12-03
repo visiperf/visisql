@@ -17,12 +17,12 @@ func NewSqlService(db *sql.DB) *SqlService {
 	return &SqlService{db: db}
 }
 
-func (ss *SqlService) List(identifier string, fields []string, from string, joins []*Join, predicates [][]*Predicate, orderBy []*OrderBy, pagination *Pagination, limit int64, v interface{}) error {
+func (ss *SqlService) List(identifier string, fields []string, from string, joins []*Join, predicates [][]*Predicate, orderBy []*OrderBy, pagination *Pagination, v interface{}) error {
 	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
 	var sCount = "1"
-	if limit != 0 {
-		sCount = fmt.Sprintf("ceil(count(*) over() / cast(%d as float))", limit)
+	if pagination != nil && pagination.Limit != 0 {
+		sCount = fmt.Sprintf("ceil(count(*) over() / cast(%d as float))", pagination.Limit)
 	}
 	sCount += " as page_count"
 
@@ -74,8 +74,8 @@ func (ss *SqlService) List(identifier string, fields []string, from string, join
 		builder.Offset(pagination.Start)
 	}
 
-	if limit != 0 {
-		builder.Limit(int(limit))
+	if pagination != nil && pagination.Limit != 0 {
+		builder.Limit(pagination.Limit)
 	}
 
 	query, args := builder.Build()
