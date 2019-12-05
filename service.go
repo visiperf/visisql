@@ -42,7 +42,28 @@ func (ss *SqlService) Query(query string, args []interface{}, v interface{}) err
 	return nil
 }
 
-// @todo: create func (ss *SqlService) QueryRow(query string, args []interface{}, v interface{}) error
+func (ss *SqlService) QueryRow(query string, args []interface{}, v interface{}) error {
+	rows, err := ss.db.Query(query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
+		return sql.ErrNoRows
+	}
+
+	data, err := ss.rowToMap(rows)
+	if err != nil {
+		return err
+	}
+
+	return ss.hydrateStruct(data, v)
+}
 
 func (ss *SqlService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) error {
 	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
