@@ -128,28 +128,7 @@ func (ss *SqlService) List(fields []string, from string, joins []*Join, predicat
 
 	query, args := builder.Build()
 
-	rows, err := ss.db.Query(query, args...)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	slice := reflect.ValueOf(v).Elem()
-	for rows.Next() {
-		data, err := ss.rowToMap(rows)
-		if err != nil {
-			return err
-		}
-
-		item := reflect.New(reflect.TypeOf(v).Elem().Elem().Elem())
-		if err := ss.hydrateStruct(data, item.Interface()); err != nil {
-			return err
-		}
-
-		slice.Set(reflect.Append(slice, item))
-	}
-
-	return nil
+	return ss.Query(query, args, v)
 }
 
 func (ss *SqlService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
