@@ -1,5 +1,11 @@
 package visisql
 
+import (
+	"fmt"
+	"github.com/huandu/go-sqlbuilder"
+	"strings"
+)
+
 type Operator string
 
 const (
@@ -20,4 +26,33 @@ func NewPredicate(field string, operator Operator, values []interface{}) *Predic
 
 func (p *Predicate) IsOperator(operator Operator) bool {
 	return p.Operator == operator
+}
+
+func predicatesToStrings(predicates [][]*Predicate, cond *sqlbuilder.Cond) ([]string, error) {
+	var andExprs []string
+	for _, pAnd := range predicates {
+
+		var orExprs []string
+		for _, pOr := range pAnd {
+			if pOr.IsOperator(OperatorIn) {
+				orExprs = append(orExprs, cond.In(pOr.Field, pOr.Values...))
+			}
+			if pOr.IsOperator(OperatorEqual) {
+				if len(pOr.Values) != 1 {
+					return nil, fmt.Errorf(`predicate must have only one value when operator is equal`)
+				}
+				orExprs = append(orExprs, cond.Equal(pOr.Field, pOr.Values[0]))
+			}
+			if pOr.IsOperator(OperatorLike) {
+				if len(pOr.Values) != 1 {
+					return nil, fmt.Errorf(`predicate must have only one value when operator is like`)
+				}
+				orExprs = append(orExprs, cond.Like(pOr.Field, pOr.Values[0]))
+			}
+		}
+
+		andExprs = append(andExprs, fmt.Sprintf("( %s )", strings.Join(orExprs, " OR ")))
+	}
+
+	return andExprs, nil
 }
