@@ -249,28 +249,34 @@ func (ss *SqlService) Update(table string, set map[string]interface{}, predicate
 	return nil
 }
 
-// @todo: set predicates type [][]*Predicate
-func (ss *SqlService) Delete(from string, predicates []*Predicate) error {
+func (ss *SqlService) Delete(from string, predicates [][]*Predicate) error {
 	builder := sqlbuilder.PostgreSQL.NewDeleteBuilder()
 
 	builder.DeleteFrom(from)
 
-	for _, p := range predicates {
-		if p.IsOperator(OperatorIn) {
-			builder.Where(builder.In(p.Field, p.Values...))
-		}
-		if p.IsOperator(OperatorEqual) {
-			if len(p.Values) != 1 {
-				return fmt.Errorf(`predicate must have only one value when operator is equal`)
+	for _, pAnd := range predicates {
+		var orExprs []string
+		for _, pOr := range pAnd {
+			if pOr.IsOperator(OperatorIn) {
+				//builder.Where(builder.In(p.Field, p.Values...))
+				orExprs = append(orExprs, builder.In(pOr.Field, pOr.Values...))
 			}
-			builder.Where(builder.Equal(p.Field, p.Values[0]))
-		}
-		if p.IsOperator(OperatorLike) {
-			if len(p.Values) != 1 {
-				return fmt.Errorf(`predicate must have only one value when operator is like`)
+			if pOr.IsOperator(OperatorEqual) {
+				if len(pOr.Values) != 1 {
+					return fmt.Errorf(`predicate must have only one value when operator is equal`)
+				}
+				//builder.Where(builder.Equal(p.Field, p.Values[0]))
+				orExprs = append(orExprs, builder.Equal(pOr.Field, pOr.Values[0]))
 			}
-			builder.Where(builder.Like(p.Field, p.Values[0]))
+			if pOr.IsOperator(OperatorLike) {
+				if len(pOr.Values) != 1 {
+					return fmt.Errorf(`predicate must have only one value when operator is like`)
+				}
+				//builder.Where(builder.Like(p.Field, p.Values[0]))
+				orExprs = append(orExprs, builder.Like(pOr.Field, pOr.Values[0]))
+			}
 		}
+		builder.Where(fmt.Sprintf("( %s )", strings.Join(orExprs, " OR ")))
 	}
 
 	query, args := builder.Build()
