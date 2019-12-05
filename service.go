@@ -17,7 +17,31 @@ func NewSqlService(db *sql.DB) *SqlService {
 	return &SqlService{db: db}
 }
 
-// @todo: create func (ss *SqlService) Query(query string, args []interface{}, v interface{}) error
+func (ss *SqlService) Query(query string, args []interface{}, v interface{}) error {
+	rows, err := ss.db.Query(query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	slice := reflect.ValueOf(v).Elem()
+	for rows.Next() {
+		data, err := ss.rowToMap(rows)
+		if err != nil {
+			return err
+		}
+
+		item := reflect.New(reflect.TypeOf(v).Elem().Elem().Elem())
+		if err := ss.hydrateStruct(data, item.Interface()); err != nil {
+			return err
+		}
+
+		slice.Set(reflect.Append(slice, item))
+	}
+
+	return nil
+}
+
 // @todo: create func (ss *SqlService) QueryRow(query string, args []interface{}, v interface{}) error
 
 func (ss *SqlService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) error {
