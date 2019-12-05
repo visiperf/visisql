@@ -6,7 +6,6 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/mitchellh/mapstructure"
 	"reflect"
-	"strings"
 )
 
 type SqlService struct {
@@ -85,30 +84,11 @@ func (ss *SqlService) List(fields []string, from string, joins []*Join, predicat
 		}
 	}
 
-	for _, pAnd := range predicates {
-		var orExprs []string
-		for _, pOr := range pAnd {
-			if pOr.IsOperator(OperatorIn) {
-				//builder.Where(builder.In(p.Field, p.Values...))
-				orExprs = append(orExprs, builder.In(pOr.Field, pOr.Values...))
-			}
-			if pOr.IsOperator(OperatorEqual) {
-				if len(pOr.Values) != 1 {
-					return fmt.Errorf(`predicate must have only one value when operator is equal`)
-				}
-				//builder.Where(builder.Equal(p.Field, p.Values[0]))
-				orExprs = append(orExprs, builder.Equal(pOr.Field, pOr.Values[0]))
-			}
-			if pOr.IsOperator(OperatorLike) {
-				if len(pOr.Values) != 1 {
-					return fmt.Errorf(`predicate must have only one value when operator is like`)
-				}
-				//builder.Where(builder.Like(p.Field, p.Values[0]))
-				orExprs = append(orExprs, builder.Like(pOr.Field, pOr.Values[0]))
-			}
-		}
-		builder.Where(fmt.Sprintf("( %s )", strings.Join(orExprs, " OR ")))
+	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	if err != nil {
+		return err
 	}
+	builder.Where(sPs...)
 
 	builder.GroupBy(groupBy...)
 
@@ -145,30 +125,11 @@ func (ss *SqlService) Get(fields []string, from string, joins []*Join, predicate
 		}
 	}
 
-	for _, pAnd := range predicates {
-		var orExprs []string
-		for _, pOr := range pAnd {
-			if pOr.IsOperator(OperatorIn) {
-				//builder.Where(builder.In(p.Field, p.Values...))
-				orExprs = append(orExprs, builder.In(pOr.Field, pOr.Values...))
-			}
-			if pOr.IsOperator(OperatorEqual) {
-				if len(pOr.Values) != 1 {
-					return fmt.Errorf(`predicate must have only one value when operator is equal`)
-				}
-				//builder.Where(builder.Equal(p.Field, p.Values[0]))
-				orExprs = append(orExprs, builder.Equal(pOr.Field, pOr.Values[0]))
-			}
-			if pOr.IsOperator(OperatorLike) {
-				if len(pOr.Values) != 1 {
-					return fmt.Errorf(`predicate must have only one value when operator is like`)
-				}
-				//builder.Where(builder.Like(p.Field, p.Values[0]))
-				orExprs = append(orExprs, builder.Like(pOr.Field, pOr.Values[0]))
-			}
-		}
-		builder.Where(fmt.Sprintf("( %s )", strings.Join(orExprs, " OR ")))
+	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	if err != nil {
+		return err
 	}
+	builder.Where(sPs...)
 
 	builder.GroupBy(groupBy...)
 
@@ -219,34 +180,15 @@ func (ss *SqlService) Update(table string, set map[string]interface{}, predicate
 
 	builder.Set(str...)
 
-	for _, pAnd := range predicates {
-		var orExprs []string
-		for _, pOr := range pAnd {
-			if pOr.IsOperator(OperatorIn) {
-				//builder.Where(builder.In(p.Field, p.Values...))
-				orExprs = append(orExprs, builder.In(pOr.Field, pOr.Values...))
-			}
-			if pOr.IsOperator(OperatorEqual) {
-				if len(pOr.Values) != 1 {
-					return fmt.Errorf(`predicate must have only one value when operator is equal`)
-				}
-				//builder.Where(builder.Equal(p.Field, p.Values[0]))
-				orExprs = append(orExprs, builder.Equal(pOr.Field, pOr.Values[0]))
-			}
-			if pOr.IsOperator(OperatorLike) {
-				if len(pOr.Values) != 1 {
-					return fmt.Errorf(`predicate must have only one value when operator is like`)
-				}
-				//builder.Where(builder.Like(p.Field, p.Values[0]))
-				orExprs = append(orExprs, builder.Like(pOr.Field, pOr.Values[0]))
-			}
-		}
-		builder.Where(fmt.Sprintf("( %s )", strings.Join(orExprs, " OR ")))
+	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	if err != nil {
+		return err
 	}
+	builder.Where(sPs...)
 
 	query, args := builder.Build()
 
-	_, err := ss.db.Exec(query, args...)
+	_, err = ss.db.Exec(query, args...)
 	if err != nil {
 		return err
 	}
@@ -259,34 +201,15 @@ func (ss *SqlService) Delete(from string, predicates [][]*Predicate) error {
 
 	builder.DeleteFrom(from)
 
-	for _, pAnd := range predicates {
-		var orExprs []string
-		for _, pOr := range pAnd {
-			if pOr.IsOperator(OperatorIn) {
-				//builder.Where(builder.In(p.Field, p.Values...))
-				orExprs = append(orExprs, builder.In(pOr.Field, pOr.Values...))
-			}
-			if pOr.IsOperator(OperatorEqual) {
-				if len(pOr.Values) != 1 {
-					return fmt.Errorf(`predicate must have only one value when operator is equal`)
-				}
-				//builder.Where(builder.Equal(p.Field, p.Values[0]))
-				orExprs = append(orExprs, builder.Equal(pOr.Field, pOr.Values[0]))
-			}
-			if pOr.IsOperator(OperatorLike) {
-				if len(pOr.Values) != 1 {
-					return fmt.Errorf(`predicate must have only one value when operator is like`)
-				}
-				//builder.Where(builder.Like(p.Field, p.Values[0]))
-				orExprs = append(orExprs, builder.Like(pOr.Field, pOr.Values[0]))
-			}
-		}
-		builder.Where(fmt.Sprintf("( %s )", strings.Join(orExprs, " OR ")))
+	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	if err != nil {
+		return err
 	}
+	builder.Where(sPs...)
 
 	query, args := builder.Build()
 
-	_, err := ss.db.Exec(query, args...)
+	_, err = ss.db.Exec(query, args...)
 	if err != nil {
 		return err
 	}
