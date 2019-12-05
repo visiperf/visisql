@@ -174,26 +174,7 @@ func (ss *SqlService) Get(fields []string, from string, joins []*Join, predicate
 
 	query, args := builder.Build()
 
-	rows, err := ss.db.Query(query, args...)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		if err := rows.Err(); err != nil {
-			return err
-		}
-
-		return sql.ErrNoRows
-	}
-
-	data, err := ss.rowToMap(rows)
-	if err != nil {
-		return err
-	}
-
-	return ss.hydrateStruct(data, v)
+	return ss.QueryRow(query, args, v)
 }
 
 func (ss *SqlService) Create(into string, values map[string]interface{}) (interface{}, error) {
