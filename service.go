@@ -65,50 +65,79 @@ func (ss *SqlService) QueryRow(query string, args []interface{}, v interface{}) 
 }
 
 func (ss *SqlService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) error {
-	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	builderRs := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
-	var sCount = "1"
-	if pagination != nil && pagination.Limit != 0 {
-		sCount = fmt.Sprintf("ceil(count(*) over() / cast(%d as float))", pagination.Limit)
-	}
-	sCount += " as page_count"
+	// from
+	builderRs.From(from)
 
-	builder.Select(append(fields, sCount)...)
-	builder.From(from)
-
+	// joins
 	for _, j := range joins {
 		if j.option != "" {
-			builder.JoinWithOption(j.option, j.table, j.on)
+			builderRs.JoinWithOption(j.option, j.table, j.on)
 		} else {
-			builder.Join(j.table, j.on)
+			builderRs.Join(j.table, j.on)
 		}
 	}
 
-	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	// predicates
+	sPs, err := predicatesToStrings(predicates, &builderRs.Cond)
 	if err != nil {
 		return err
 	}
-	builder.Where(sPs...)
+	builderRs.Where(sPs...)
 
-	builder.GroupBy(groupBy...)
+	// group by
+	builderRs.GroupBy(groupBy...)
 
+	// order by
 	var ob []string
 	for _, o := range orderBy {
 		ob = append(ob, o.toString())
 	}
-	builder.OrderBy(ob...)
+	builderRs.OrderBy(ob...)
 
+	// pagination
 	if pagination != nil {
-		builder.Offset(pagination.Start)
+		builderRs.Offset(pagination.Start)
+
+		if pagination.Limit != 0 {
+			builderRs.Limit(pagination.Limit)
+		}
 	}
 
-	if pagination != nil && pagination.Limit != 0 {
-		builder.Limit(pagination.Limit)
+	builderRs.Select(fields...)
+	queryRs, argsRs := builderRs.Build()
+
+	if err := ss.Query(queryRs, argsRs, v); err != nil {
+		return err
 	}
 
-	query, args := builder.Build()
+	builderRs.Select("count(*) over () as total_count")
 
-	return ss.Query(query, args, v)
+	builderC := sqlbuilder.PostgreSQL.NewSelectBuilder()
+
+	// fields
+	builderC.Select("count(*) as count", "total_count", "ceil(total_count::decimal / count(*))::integer as page_count")
+
+	// from
+	builderC.From(builderC.BuilderAs(builderRs, "results"))
+
+	// group by
+	builderC.GroupBy("total_count")
+
+	queryC, argsC := builderC.Build()
+
+	var CountSql = struct {
+		Count      int64 `sql:"count"`
+		TotalCount int64 `sql:"total_count"`
+		PageCount  int64 `sql:"page_count"`
+	}{}
+
+	if err = ss.QueryRow(queryC, argsC, &CountSql); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ss *SqlService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
