@@ -64,7 +64,7 @@ func (ss *SqlService) QueryRow(query string, args []interface{}, v interface{}) 
 	return ss.hydrateStruct(data, v)
 }
 
-func (ss *SqlService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) error {
+func (ss *SqlService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
 	builderRs := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
 	// from
@@ -82,7 +82,7 @@ func (ss *SqlService) List(fields []string, from string, joins []*Join, predicat
 	// predicates
 	sPs, err := predicatesToStrings(predicates, &builderRs.Cond)
 	if err != nil {
-		return err
+		return 0, 0, 0, err
 	}
 	builderRs.Where(sPs...)
 
@@ -109,7 +109,7 @@ func (ss *SqlService) List(fields []string, from string, joins []*Join, predicat
 	queryRs, argsRs := builderRs.Build()
 
 	if err := ss.Query(queryRs, argsRs, v); err != nil {
-		return err
+		return 0, 0, 0, err
 	}
 
 	builderRs.Select("count(*) over () as total_count")
@@ -134,10 +134,10 @@ func (ss *SqlService) List(fields []string, from string, joins []*Join, predicat
 	}{}
 
 	if err = ss.QueryRow(queryC, argsC, &CountSql); err != nil {
-		return err
+		return 0, 0, 0, err
 	}
 
-	return nil
+	return CountSql.Count, CountSql.TotalCount, CountSql.PageCount, nil
 }
 
 func (ss *SqlService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
