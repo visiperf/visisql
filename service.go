@@ -167,7 +167,7 @@ func (ss *SqlService) Get(fields []string, from string, joins []*Join, predicate
 	return ss.QueryRow(query, args, v)
 }
 
-func (ss *SqlService) Create(into string, values map[string]interface{}) (interface{}, error) {
+func (ss *SqlService) Create(into string, values map[string]interface{}) (interface{}, *sql.Tx, error) {
 	builder := sqlbuilder.PostgreSQL.NewInsertBuilder()
 
 	builder.InsertInto(into)
@@ -184,17 +184,24 @@ func (ss *SqlService) Create(into string, values map[string]interface{}) (interf
 
 	query, args := builder.Build()
 
-	row := ss.db.QueryRow(fmt.Sprintf(`%s returning id`, query), args...)
+	tx, err := ss.db.Begin()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	row := tx.QueryRow(fmt.Sprintf(`%s returning id`, query), args...)
 	if row == nil {
-		return nil, fmt.Errorf("row is nil")
+		_ = tx.Rollback()
+		return nil, nil, fmt.Errorf("failed to exec insert query")
 	}
 
 	var id interface{}
 	if err := row.Scan(&id); err != nil {
-		return nil, err
+		_ = tx.Rollback()
+		return nil, nil, err
 	}
 
-	return id, nil
+	return id, tx, nil
 }
 
 func (ss *SqlService) Update(table string, set map[string]interface{}, predicates [][]*Predicate) error {
