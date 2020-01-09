@@ -204,7 +204,7 @@ func (ss *SqlService) Create(into string, values map[string]interface{}) (interf
 	return id, tx, nil
 }
 
-func (ss *SqlService) Update(table string, set map[string]interface{}, predicates [][]*Predicate) error {
+func (ss *SqlService) Update(table string, set map[string]interface{}, predicates [][]*Predicate) (*sql.Tx, error) {
 	builder := sqlbuilder.PostgreSQL.NewUpdateBuilder()
 
 	builder.Update(table)
@@ -218,18 +218,24 @@ func (ss *SqlService) Update(table string, set map[string]interface{}, predicate
 
 	sPs, err := predicatesToStrings(predicates, &builder.Cond)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	builder.Where(sPs...)
 
 	query, args := builder.Build()
 
-	_, err = ss.db.Exec(query, args...)
+	tx, err := ss.db.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+
+	return tx, nil
 }
 
 func (ss *SqlService) Delete(from string, predicates [][]*Predicate) error {
