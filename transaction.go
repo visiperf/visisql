@@ -38,12 +38,10 @@ func (ts *TransactionService) Delete(from string, predicates [][]*Predicate) err
 	return errors.New("not implemented")
 }
 
-// @todo: implement TransactionService.Rollback()
 func (ts *TransactionService) Rollback() error {
-	return errors.New("not implemented")
+	return ts.tx.Rollback()
 }
 
-// @todo: implement TransactionService.Commit()
 func (ts *TransactionService) Commit() error {
-	return errors.New("not implemented")
+	return ts.tx.Commit()
 }
