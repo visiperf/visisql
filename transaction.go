@@ -49,9 +49,34 @@ func (ts *TransactionService) InsertMultiple(into string, values []map[string]in
 	return nil, errors.New("not implemented")
 }
 
-// @todo: implement TransactionService.Update()
 func (ts *TransactionService) Update(table string, set map[string]interface{}, predicates [][]*Predicate) error {
-	return errors.New("not implemented")
+	builder := sqlbuilder.PostgreSQL.NewUpdateBuilder()
+
+	builder.Update(table)
+
+	var str []string
+	for f, v := range set {
+		str = append(str, builder.Assign(f, v))
+	}
+
+	builder.Set(str...)
+
+	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	if err != nil {
+		return err
+	}
+	builder.Where(sPs...)
+
+	query, args := builder.Build()
+
+	if _, err := ts.tx.Exec(query, args...); err != nil {
+		if rErr := ts.tx.Rollback(); rErr != nil {
+			return rErr
+		}
+		return err
+	}
+
+	return nil
 }
 
 // @todo: implement TransactionService.Delete()
