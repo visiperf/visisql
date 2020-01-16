@@ -20,7 +20,21 @@ func NewTransactionService(db *sql.DB) (*TransactionService, error) {
 }
 
 func (ts *TransactionService) Insert(into string, values map[string]interface{}, returning interface{}) (interface{}, error) {
-	query, args := ts.buildInsertQuery(into, values)
+	builder := sqlbuilder.PostgreSQL.NewInsertBuilder()
+
+	builder.InsertInto(into)
+
+	var fields []string
+	var vals []interface{}
+	for f, v := range values {
+		fields = append(fields, f)
+		vals = append(vals, v)
+	}
+
+	builder.Cols(fields...)
+	builder.Values(vals...)
+
+	query, args := builder.Build()
 
 	var resp interface{}
 	if returning != nil {
@@ -147,22 +161,4 @@ func (ts *TransactionService) Rollback() error {
 
 func (ts *TransactionService) Commit() error {
 	return ts.tx.Commit()
-}
-
-func (ts *TransactionService) buildInsertQuery(into string, values map[string]interface{}) (string, []interface{}) {
-	builder := sqlbuilder.PostgreSQL.NewInsertBuilder()
-
-	builder.InsertInto(into)
-
-	var fields []string
-	var vals []interface{}
-	for f, v := range values {
-		fields = append(fields, f)
-		vals = append(vals, v)
-	}
-
-	builder.Cols(fields...)
-	builder.Values(vals...)
-
-	return builder.Build()
 }
