@@ -44,7 +44,7 @@ SQL equivalent :
 
 select c.id, c.name
 from company c
-inner join user u on u.company_id = c.id
+    inner join user u on u.company_id = c.id
 where c.id = 1
 group by c.id
 
@@ -55,7 +55,7 @@ var company struct {
     Name string `sql:"name"`
 }
 
-err := ss.Get(fields, from, joins, where, groupBy, &company)
+err := visisql.NewSelectService(db).Get(fields, from, joins, where, groupBy, &company)
 
 // company.Id -> 1
 // company.Name -> "Company 1"
