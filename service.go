@@ -2,7 +2,6 @@ package visisql
 
 import (
 	"database/sql"
-	"fmt"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/mitchellh/mapstructure"
 	"reflect"
@@ -165,98 +164,6 @@ func (ss *SqlService) Get(fields []string, from string, joins []*Join, predicate
 	query, args := builder.Build()
 
 	return ss.QueryRow(query, args, v)
-}
-
-func (ss *SqlService) Create(into string, values map[string]interface{}) (interface{}, *sql.Tx, error) {
-	builder := sqlbuilder.PostgreSQL.NewInsertBuilder()
-
-	builder.InsertInto(into)
-
-	var fields []string
-	var vals []interface{}
-	for f, v := range values {
-		fields = append(fields, f)
-		vals = append(vals, v)
-	}
-
-	builder.Cols(fields...)
-	builder.Values(vals...)
-
-	query, args := builder.Build()
-
-	tx, err := ss.db.Begin()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	row := tx.QueryRow(fmt.Sprintf(`%s returning id`, query), args...)
-	if row == nil {
-		_ = tx.Rollback()
-		return nil, nil, fmt.Errorf("failed to exec insert query")
-	}
-
-	var id interface{}
-	if err := row.Scan(&id); err != nil {
-		_ = tx.Rollback()
-		return nil, nil, err
-	}
-
-	return id, tx, nil
-}
-
-func (ss *SqlService) Update(table string, set map[string]interface{}, predicates [][]*Predicate) (*sql.Tx, error) {
-	builder := sqlbuilder.PostgreSQL.NewUpdateBuilder()
-
-	builder.Update(table)
-
-	var str []string
-	for f, v := range set {
-		str = append(str, builder.Assign(f, v))
-	}
-
-	builder.Set(str...)
-
-	sPs, err := predicatesToStrings(predicates, &builder.Cond)
-	if err != nil {
-		return nil, err
-	}
-	builder.Where(sPs...)
-
-	query, args := builder.Build()
-
-	tx, err := ss.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = tx.Exec(query, args...)
-	if err != nil {
-		_ = tx.Rollback()
-		return nil, err
-	}
-
-	return tx, nil
-}
-
-func (ss *SqlService) Delete(from string, predicates [][]*Predicate) error {
-	builder := sqlbuilder.PostgreSQL.NewDeleteBuilder()
-
-	builder.DeleteFrom(from)
-
-	sPs, err := predicatesToStrings(predicates, &builder.Cond)
-	if err != nil {
-		return err
-	}
-	builder.Where(sPs...)
-
-	query, args := builder.Build()
-
-	_, err = ss.db.Exec(query, args...)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (ss *SqlService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
