@@ -45,7 +45,7 @@ func (ts *TransactionService) Insert(into string, values map[string]interface{},
 }
 
 // @todo: implement TransactionService.InsertMultiple()
-func (ts *TransactionService) InsertMultiple(into string, values []map[string]interface{}, returning interface{}) ([]interface{}, error) {
+func (ts *TransactionService) InsertMultiple(into string, fields []string, values [][]interface{}, returning interface{}) ([]interface{}, error) {
 	return nil, errors.New("not implemented")
 }
 
