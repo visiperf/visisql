@@ -79,9 +79,27 @@ func (ts *TransactionService) Update(table string, set map[string]interface{}, p
 	return nil
 }
 
-// @todo: implement TransactionService.Delete()
 func (ts *TransactionService) Delete(from string, predicates [][]*Predicate) error {
-	return errors.New("not implemented")
+	builder := sqlbuilder.PostgreSQL.NewDeleteBuilder()
+
+	builder.DeleteFrom(from)
+
+	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	if err != nil {
+		return err
+	}
+	builder.Where(sPs...)
+
+	query, args := builder.Build()
+
+	if _, err := ts.tx.Exec(query, args...); err != nil {
+		if rErr := ts.tx.Rollback(); rErr != nil {
+			return rErr
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (ts *TransactionService) Rollback() error {
