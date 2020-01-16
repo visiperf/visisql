@@ -7,15 +7,15 @@ import (
 	"reflect"
 )
 
-type SqlService struct {
+type SelectService struct {
 	db *sql.DB
 }
 
-func NewSqlService(db *sql.DB) *SqlService {
-	return &SqlService{db: db}
+func NewSelectService(db *sql.DB) *SelectService {
+	return &SelectService{db: db}
 }
 
-func (ss *SqlService) Query(query string, args []interface{}, v interface{}) error {
+func (ss *SelectService) Query(query string, args []interface{}, v interface{}) error {
 	rows, err := ss.db.Query(query, args...)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (ss *SqlService) Query(query string, args []interface{}, v interface{}) err
 	return nil
 }
 
-func (ss *SqlService) QueryRow(query string, args []interface{}, v interface{}) error {
+func (ss *SelectService) QueryRow(query string, args []interface{}, v interface{}) error {
 	rows, err := ss.db.Query(query, args...)
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func (ss *SqlService) QueryRow(query string, args []interface{}, v interface{}) 
 	return ss.hydrateStruct(data, v)
 }
 
-func (ss *SqlService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
+func (ss *SelectService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
 	builderRs := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
 	// from
@@ -139,7 +139,7 @@ func (ss *SqlService) List(fields []string, from string, joins []*Join, predicat
 	return CountSql.Count, CountSql.TotalCount, CountSql.PageCount, nil
 }
 
-func (ss *SqlService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
+func (ss *SelectService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
 	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
 	builder.Select(fields...)
@@ -166,7 +166,7 @@ func (ss *SqlService) Get(fields []string, from string, joins []*Join, predicate
 	return ss.QueryRow(query, args, v)
 }
 
-func (ss *SqlService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
+func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
 	cols, err := row.Columns()
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (ss *SqlService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
 	return res, nil
 }
 
-func (ss *SqlService) hydrateStruct(data map[string]interface{}, v interface{}) error {
+func (ss *SelectService) hydrateStruct(data map[string]interface{}, v interface{}) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "sql", Result: v})
 	if err != nil {
 		return err
