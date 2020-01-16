@@ -33,10 +33,22 @@ var joins = []*visisql.Join{
 }
 
 var where = [][]*visisql.Predicate{{
-    visisql.NewPredicate("c.id", visisql.OperatorEqual, []interface{}{1}) // SQL equivalent : c.id = 1
+    visisql.NewPredicate("c.id", visisql.OperatorEqual, []interface{}{1})
 }}
 
 var groupBy = []string{"c.id"}
+
+/*
+
+SQL equivalent :
+
+select c.id, c.name
+from company c
+inner join user u on u.company_id = c.id
+where c.id = 1
+group by c.id
+
+*/
 
 var company struct {
     Id   int64  `sql:"id"`
