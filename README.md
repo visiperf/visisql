@@ -33,7 +33,7 @@ var joins = []*visisql.Join{
 }
 
 var where = [][]*visisql.Predicate{{
-    visisql.NewPredicate("c.id", visisql.OperatorEqual, []interface{}{1})
+    visisql.NewPredicate("c.id", visisql.OperatorEqual, []interface{}{1}) // SQL equivalent : c.id = 1
 }}
 
 var groupBy = []string{"c.id"}
