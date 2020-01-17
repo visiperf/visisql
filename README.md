@@ -148,6 +148,7 @@ ts, err := visisql.NewTransactionService(db)
 
 cId, err := ts.Insert("company", map[string]interface{}{"name": "Company 4"}, "id")
 // company is not saved in database yet (see sql transaction for more informations)
+// if an error is occured, rollback is automatically applied to transaction
 
 /*
 
