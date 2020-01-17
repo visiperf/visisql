@@ -75,6 +75,67 @@ err := visisql.NewSelectService(db).Get(fields, from, joins, where, groupBy, &co
 
 ### Delete ###
 
+## FAQ
+
+- Why `predicates` params is always typed as `[][]*visisql.Predicate` ?
+
+> `predicates` params is two dimentional slice to be able to make request with AND / OR operators.
+>
+> The first dimension will join predicates with `AND` operator, while second dimension will join predicates with `OR` operator.
+>
+> example with `AND` :
+>
+> ```go
+> [][]*visisql.Predicate{{
+>   visisql.NewPredicate("c.name", visisql.OperatorLike, []interface{}{"%@visiperf.io"})
+> }, {
+>   visisql.NewPredicate("u.id", visisql.OperatorEqual, []interface{}{1})
+> }}
+> ```
+>
+> SQL equivalent :
+>
+> ```sql
+> where c.name like '%@visiperf.io' and u.id = 1
+> ```
+>
+> 
+>
+> example with `OR` :
+>
+> ```go
+> [][]*visisql.Predicate{{
+>   visisql.NewPredicate("c.id", visisql.OperatorEqual, []interface{}{1}),
+>   visisql.NewPredicate("c.name", visisql.OperatorEqual, []interface{}{"Visiperf"}),
+> }}
+> ```
+>
+> SQL equivalent :
+>
+> ```sql
+> where c.id = 1 or c.name = 'Visiperf'
+> ```
+>
+> 
+>
+> Of course, you can mix `AND` and `OR` operators in same request.
+>
+> example :
+>
+> ```go
+> [][]*visisql.Predicate{{
+>   visisql.NewPredicate("c.id", visisql.OperatorEqual, []interface{}{1}),
+>   visisql.NewPredicate("c.name", visisql.OperatorEqual, []interface{}{"Visiperf"}),
+> }, {
+>   visisql.NewPredicate("u.id", visisql.OperatorEqual, []interface{}{1})
+> }}
+> ```
+>
+> SQL equivalent :
+>
+> ```sql
+> where (c.id = 1 or c.name = 'Visiperf') and u.id = 1
+> ```
 
 ## References ###
 
