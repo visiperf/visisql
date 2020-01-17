@@ -17,6 +17,15 @@ The following examples will be based on this PostgreSQL table named `company` :
 | 1 | Company 1 |
 | 2 | Company 2 |
 
+and this structure :
+
+```go
+type Company struct {
+    Id   int64  `sql:"id"`
+    Name string `sql:"name"`
+}
+```
+
 ### Select one row ###
 
 Here is an example to demonstrate how to select the company with id = 1 :
@@ -50,10 +59,7 @@ group by c.id
 
 */
 
-var company struct {
-    Id   int64  `sql:"id"`
-    Name string `sql:"name"`
-}
+var company Company
 
 err := visisql.NewSelectService(db).Get(fields, from, joins, where, groupBy, &company)
 
