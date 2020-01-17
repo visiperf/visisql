@@ -1,5 +1,12 @@
 # PostgreSQL service for Golang #
 
+Table of contents
+=================
+
+  * [Install](#install)
+  * [Usage](#usage)
+  * [FAQ](#faq)
+  * [References](#references)
 
 ## Install ##
 
