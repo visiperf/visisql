@@ -16,6 +16,7 @@ The following examples will be based on this PostgreSQL table named `company` :
 |------|--------|
 | 1 | Company 1 |
 | 2 | Company 2 |
+| 3 | Company 3 |
 
 and this structure :
 
@@ -28,7 +29,7 @@ type Company struct {
 
 ### Select one row ###
 
-Here is an example to demonstrate how to select the company with id = 1 :
+Here is an example to demonstrate how to select the company with `id = 1` :
 
 ```go
 db, err := sql.Open(...)
@@ -38,11 +39,11 @@ var fields = []string{"c.id", "c.name"}
 var from = "company c"
 
 var joins = []*visisql.Join{
-    visisql.NewJoin("user u", "u.company_id = c.id")
+    visisql.NewJoin("user u", "u.company_id = c.id"),
 }
 
 var where = [][]*visisql.Predicate{{
-    visisql.NewPredicate("c.id", visisql.OperatorEqual, []interface{}{1})
+    visisql.NewPredicate("c.id", visisql.OperatorEqual, []interface{}{1}),
 }}
 
 var groupBy = []string{"c.id"}
@@ -68,6 +69,66 @@ err := visisql.NewSelectService(db).Get(fields, from, joins, where, groupBy, &co
 ```
 
 ### Select multiple rows ###
+
+Here is an example to demonstrate how to select the 2 first companies starting with `Company` :
+
+```go
+db, err := sql.Open(...)
+
+var fields = []string{"c.id", "c.name"}
+
+var from = "company c"
+
+var joins = []*visisql.Join{
+    visisql.NewJoin("user u", "u.company_id = c.id"),
+}
+
+var where = [][]*visisql.Predicate{{
+    visisql.NewPredicate("c.name", visisql.OperatorLike, []interface{}{"Company%"}),
+}}
+
+var groupBy = []string{"c.id"}
+
+var orderBy = []*visisql.OrderBy{
+  	visisql.NewOrderBy("c.id", visisql.OrderAsc),
+}
+
+var pagination = visisql.NewPagination(0, 2)
+
+/*
+
+SQL equivalent :
+
+select c.id, c.name
+from company c
+    inner join user u on u.company_id = c.id
+where c.name like 'Company%'
+group by c.id
+order by c.id ASC
+limit 2
+
+*/
+
+var companies []*Company
+
+c, tc, pc, err := visisql.NewSelectService(db).List(fields, from, joins, where, groupBy, orderBy, pagination, &companies)
+
+/*
+
+companies -> [{
+	company.Id -> 1
+	company.Name -> "Company 1"
+}, {
+	company.Id -> 2
+	company.Name -> "Company 2"
+}]
+
+c (count) -> 2 (number of rows including limit)
+tc (total count) -> 3 (number of rows if limit was 0)
+pc (page count) -> 2 (number of pages, with c elements per page)
+
+*/
+```
 
 ### Insert ###
 
