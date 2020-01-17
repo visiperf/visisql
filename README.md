@@ -83,6 +83,8 @@ err := visisql.NewSelectService(db).Get(fields, from, joins, where, groupBy, &co
 >
 > The first dimension will join predicates with `AND` operator, while second dimension will join predicates with `OR` operator.
 >
+>  
+>
 > example with `AND` :
 >
 > ```go
@@ -99,7 +101,7 @@ err := visisql.NewSelectService(db).Get(fields, from, joins, where, groupBy, &co
 > where c.name like '%@visiperf.io' and u.id = 1
 > ```
 >
-> 
+>  
 >
 > example with `OR` :
 >
@@ -116,7 +118,7 @@ err := visisql.NewSelectService(db).Get(fields, from, joins, where, groupBy, &co
 > where c.id = 1 or c.name = 'Visiperf'
 > ```
 >
-> 
+>  
 >
 > Of course, you can mix `AND` and `OR` operators in same request.
 >
