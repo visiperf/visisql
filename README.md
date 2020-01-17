@@ -139,6 +139,33 @@ pc (page count) -> 2 (number of pages, with c elements per page)
 
 ### Insert ###
 
+Here is an example to demonstrate how to insert a company in database :
+
+```go
+db, err := sql.Open(...)
+
+ts, err := visisql.NewTransactionService(db)
+
+cId, err := ts.Insert("company", map[string]interface{}{"name": "Company 4"}, "id")
+// company is not saved in database yet (see sql transaction for more informations)
+
+/*
+
+SQL equivalent :
+
+insert into company (name) 
+values ('Company 4')
+returning id
+
+*/
+
+// cId -> 4 because `returning` params is set to `id`. You can set what you want, including `nil` if you don't need returned value.
+
+err = ts.Commit() // all requests made with ts are executed now, Company 4 is now in database
+```
+
+### Insert Multiple
+
 ### Update ###
 
 ### Delete ###
