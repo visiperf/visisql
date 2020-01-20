@@ -167,6 +167,47 @@ err = ts.Commit() // all requests made with ts are executed now, Company 4 is no
 
 ### Insert Multiple
 
+Here is an example to demonstrate how to insert multiple companies in database :
+
+```go
+db, err := sql.Open(...)
+
+var into = "company"
+
+var fields = []string{"name"}
+
+// values must be in same order as fields
+var values = [][]interface{}{{"Company 5"}, {"Company 6"}}
+
+var returning = "id"
+
+/*
+
+SQL equivalent (using prepared statement) :
+
+insert into company (name) 
+values ('Company 5')
+returning id
+
+insert into company (name) 
+values ('Company 6')
+returning id
+
+*/
+
+ts, err := visisql.NewTransactionService(db)
+
+ids, err := ts.InsertMultiple(into, fields, values, returning)
+// companies are not saved in database yet (see sql transaction for more informations)
+// if an error is occured, rollback is automatically applied to transaction
+
+err = ts.Commit()
+
+// ids -> [5, 6] because `returning` params is set to `id`. You can set what you want, including `nil` if you don't need returned value.
+```
+
+
+
 ### Update ###
 
 ### Delete ###
