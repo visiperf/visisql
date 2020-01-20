@@ -8,6 +8,7 @@ Table of contents
     * [Select one row](#select-one-row)
     * [Select multiple rows](#select-multiple-rows)
     * [Insert](#insert)
+    * [Insert multiple](#insert-multiple)
     * [Update](#update)
     * [Delete](#delete)
   * [FAQ](#faq)
