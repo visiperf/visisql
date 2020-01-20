@@ -183,7 +183,7 @@ var into = "company"
 var fields = []string{"name"}
 
 // values must be in same order as fields
-var values = [][]interface{}{{"Company 5"}, {"Company 6"}}
+var values = [][]interface{}{{"Company 4"}, {"Company 5"}}
 
 var returning = "id"
 
@@ -192,11 +192,11 @@ var returning = "id"
 SQL equivalent (using prepared statement) :
 
 insert into company (name) 
-values ('Company 5')
+values ('Company 4')
 returning id
 
 insert into company (name) 
-values ('Company 6')
+values ('Company 5')
 returning id
 
 */
@@ -207,14 +207,44 @@ ids, err := ts.InsertMultiple(into, fields, values, returning)
 // companies are not saved in database yet (see sql transaction for more informations)
 // if an error is occured, rollback is automatically applied to transaction
 
-err = ts.Commit() // all requests made with ts are executed now, Company 5 & 6 are now in database
+err = ts.Commit() // all requests made with ts are executed now, Companies 4 & 5 are now in database
 
-// ids -> [5, 6] because `returning` params is set to `id`. You can set what you want, including `nil` if you don't need returned value.
+// ids -> [4, 5] because `returning` params is set to `id`. You can set what you want, including `nil` if you don't need returned value.
 ```
 
-
-
 ### Update ###
+
+Here is an example to demonstrate how to update the company with `id = 3` :
+
+```go
+db, err := sql.Open(...)
+
+var table = "company"
+
+var set = map[string]interface{}{"name": "Company 4"}
+
+var where = [][]*visisql.Predicate{{
+    visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{3}),
+}}
+
+/*
+
+SQL equivalent :
+
+update company
+set name = 'Company 4'
+where id = 3
+
+*/
+
+ts, err := visisql.NewTransactionService(db)
+
+err = ts.Update(table, set, where)
+// company is not updated in database yet (see sql transaction for more informations)
+// if an error is occured, rollback is automatically applied to transaction
+
+err = ts.Commit() // all requests made with ts are executed now, Company 3 is now updated to Company 4
+```
 
 ### Delete ###
 
