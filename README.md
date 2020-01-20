@@ -144,11 +144,11 @@ Here is an example to demonstrate how to insert a company in database :
 ```go
 db, err := sql.Open(...)
 
-ts, err := visisql.NewTransactionService(db)
+var into = "company"
 
-cId, err := ts.Insert("company", map[string]interface{}{"name": "Company 4"}, "id")
-// company is not saved in database yet (see sql transaction for more informations)
-// if an error is occured, rollback is automatically applied to transaction
+var values = map[string]interface{}{"name": "Company 4"}
+
+var returning = "id"
 
 /*
 
@@ -160,9 +160,15 @@ returning id
 
 */
 
-// cId -> 4 because `returning` params is set to `id`. You can set what you want, including `nil` if you don't need returned value.
+ts, err := visisql.NewTransactionService(db)
+
+cId, err := ts.Insert(into, values, returning)
+// company is not saved in database yet (see sql transaction for more informations)
+// if an error is occured, rollback is automatically applied to transaction
 
 err = ts.Commit() // all requests made with ts are executed now, Company 4 is now in database
+
+// cId -> 4 because `returning` params is set to `id`. You can set what you want, including `nil` if you don't need returned value.
 ```
 
 ### Insert Multiple
@@ -201,7 +207,7 @@ ids, err := ts.InsertMultiple(into, fields, values, returning)
 // companies are not saved in database yet (see sql transaction for more informations)
 // if an error is occured, rollback is automatically applied to transaction
 
-err = ts.Commit()
+err = ts.Commit() // all requests made with ts are executed now, Company 5 & 6 are now in database
 
 // ids -> [5, 6] because `returning` params is set to `id`. You can set what you want, including `nil` if you don't need returned value.
 ```
