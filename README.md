@@ -5,6 +5,11 @@ Table of contents
 
   * [Install](#install)
   * [Usage](#usage)
+    * [Select one row](#select-one-row)
+    * [Select multiple rows](#select-multiple-rows)
+    * [Insert](#insert)
+    * [Update](#update)
+    * [Delete](#delete)
   * [FAQ](#faq)
   * [References](#references)
 
