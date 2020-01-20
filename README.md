@@ -177,7 +177,7 @@ err = ts.Commit() // all requests made with ts are executed now, Company 4 is no
 // cId -> 4 because `returning` params is set to `id`. You can set what you want, including `nil` if you don't need returned value.
 ```
 
-### Insert Multiple
+### Insert multiple
 
 Here is an example to demonstrate how to insert multiple companies in database :
 
