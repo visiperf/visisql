@@ -248,6 +248,35 @@ err = ts.Commit() // all requests made with ts are executed now, Company 3 is no
 
 ### Delete ###
 
+Here is an example to demonstrate how to delete the company with `id = 3` :
+
+```go
+db, err := sql.Open(...)
+
+var from = "company"
+
+var where = [][]*visisql.Predicate{{
+    visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{3}),
+}}
+
+/*
+
+SQL equivalent :
+
+delete from company
+where id = 3
+
+*/
+
+ts, err := visisql.NewTransactionService(db)
+
+err = ts.Delete(from, where)
+// company is not deleted in database yet (see sql transaction for more informations)
+// if an error is occured, rollback is automatically applied to transaction
+
+err = ts.Commit() // all requests made with ts are executed now, Company 3 is now deleted
+```
+
 ## FAQ
 
 - Why `predicates` params is always typed as `[][]*visisql.Predicate` ?
