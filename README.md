@@ -1,5 +1,7 @@
 # PostgreSQL service for Golang #
 
+Package `visisql` provide two services `Select` and `Transaction` to help making PostgreSQL requests. `Select` service will assist you to build and scan queries, while `Transaction` will help you to insert, update and delete rows in your databases with SQL transactions (rollback, commit ...).
+
 Table of contents
 =================
 
