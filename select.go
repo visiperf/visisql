@@ -71,10 +71,10 @@ func (ss *SelectService) List(fields []string, from string, joins []*Join, predi
 
 	// joins
 	for _, j := range joins {
-		if j.option != "" {
-			builderRs.JoinWithOption(j.option, j.table, j.on)
-		} else {
+		if j.option == InnerJoin {
 			builderRs.Join(j.table, j.on)
+		} else {
+			builderRs.JoinWithOption(sqlbuilder.JoinOption(j.option), j.table, j.on)
 		}
 	}
 
@@ -146,10 +146,10 @@ func (ss *SelectService) Get(fields []string, from string, joins []*Join, predic
 	builder.From(from)
 
 	for _, j := range joins {
-		if j.option != "" {
-			builder.JoinWithOption(j.option, j.table, j.on)
-		} else {
+		if j.option == InnerJoin {
 			builder.Join(j.table, j.on)
+		} else {
+			builder.JoinWithOption(sqlbuilder.JoinOption(j.option), j.table, j.on)
 		}
 	}
 

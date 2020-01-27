@@ -1,17 +1,19 @@
 package visisql
 
-import "github.com/huandu/go-sqlbuilder"
+type JoinOption string
+
+const (
+	LeftJoin  JoinOption = "LEFT"
+	InnerJoin JoinOption = "INNER"
+	RightJoin JoinOption = "RIGHT"
+)
 
 type Join struct {
+	option JoinOption
 	table  string
 	on     string
-	option sqlbuilder.JoinOption
 }
 
-func NewJoin(table string, on string) *Join {
-	return &Join{table: table, on: on}
-}
-
-func NewJoinOption(table string, on string, option sqlbuilder.JoinOption) *Join {
-	return &Join{table: table, on: on, option: option}
+func NewJoin(option JoinOption, table string, on string) *Join {
+	return &Join{option: option, table: table, on: on}
 }
