@@ -54,7 +54,7 @@ var fields = []string{"c.id", "c.name"}
 var from = "company c"
 
 var joins = []*visisql.Join{
-    visisql.NewJoin("user u", "u.company_id = c.id"),
+    visisql.NewJoin(visisql.InnerJoin, "user u", "u.company_id = c.id"),
 }
 
 var where = [][]*visisql.Predicate{{
@@ -95,7 +95,7 @@ var fields = []string{"c.id", "c.name"}
 var from = "company c"
 
 var joins = []*visisql.Join{
-    visisql.NewJoin("user u", "u.company_id = c.id"),
+    visisql.NewJoin(visisql.InnerJoin, "user u", "u.company_id = c.id"),
 }
 
 var where = [][]*visisql.Predicate{{
