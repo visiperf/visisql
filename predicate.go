@@ -9,9 +9,10 @@ import (
 type Operator string
 
 const (
-	OperatorIn    Operator = "IN"
-	OperatorEqual Operator = "EQUALS"
-	OperatorLike  Operator = "LIKE"
+	OperatorIn     Operator = "IN"
+	OperatorEqual  Operator = "EQUALS"
+	OperatorLike   Operator = "LIKE"
+	OperatorIsNull Operator = "IS NULL"
 )
 
 type Predicate struct {
@@ -48,6 +49,12 @@ func predicatesToStrings(predicates [][]*Predicate, cond *sqlbuilder.Cond) ([]st
 					return nil, fmt.Errorf(`predicate must have only one value when operator is like`)
 				}
 				orExprs = append(orExprs, cond.Like(pOr.Field, pOr.Values[0]))
+			}
+			if pOr.IsOperator(OperatorIsNull) {
+				if len(pOr.Values) > 0 {
+					return nil, fmt.Errorf(`predicate should not have value(s) when operator is null`)
+				}
+				orExprs = append(orExprs, cond.IsNull(pOr.Field))
 			}
 		}
 
