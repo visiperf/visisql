@@ -132,7 +132,7 @@ func (ss *SelectService) List(fields []string, from string, joins []*Join, predi
 		PageCount  int64 `sql:"page_count"`
 	}{}
 
-	if err = ss.QueryRow(queryC, argsC, &CountSql); err != nil {
+	if err = ss.QueryRow(queryC, argsC, &CountSql); err != nil && err != sql.ErrNoRows {
 		return 0, 0, 0, err
 	}
 
