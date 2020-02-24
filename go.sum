@@ -1,0 +1,4 @@
+github.com/huandu/go-sqlbuilder v1.7.0 h1:1HEgUJNI29Rv1YlvyautRD2bO5gF6qgGRXaF/7B4BiE=
+github.com/huandu/go-sqlbuilder v1.7.0/go.mod h1:cM38aLPrMXaGxsUkHFh1e2skthPnQRPK7h8//X5LQMc=
+github.com/mitchellh/mapstructure v1.1.2 h1:fmNYVwqnSfB9mZU6OS2O6GsXM+wcskZDuKQzvN1EDeE=
+github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
