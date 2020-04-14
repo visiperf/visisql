@@ -9,10 +9,12 @@ import (
 type Operator string
 
 const (
-	OperatorIn     Operator = "IN"
-	OperatorEqual  Operator = "EQUALS"
-	OperatorLike   Operator = "LIKE"
-	OperatorIsNull Operator = "IS NULL"
+	OperatorIn          Operator = "IN"
+	OperatorEqual       Operator = "EQUALS"
+	OperatorLike        Operator = "LIKE"
+	OperatorIsNull      Operator = "IS NULL"
+	OperatorLessThan    Operator = "LESS THAN"
+	OperatorGreaterThan Operator = "GREATER THAN"
 )
 
 type Predicate struct {
@@ -55,6 +57,18 @@ func predicatesToStrings(predicates [][]*Predicate, cond *sqlbuilder.Cond) ([]st
 					return nil, fmt.Errorf(`predicate should not have value(s) when operator is null`)
 				}
 				orExprs = append(orExprs, cond.IsNull(pOr.Field))
+			}
+			if pOr.IsOperator(OperatorLessThan) {
+				if len(pOr.Values) != 1 {
+					return nil, fmt.Errorf(`predicate must have only one value when operator is less than`)
+				}
+				orExprs = append(orExprs, cond.LessThan(pOr.Field, pOr.Values[0]))
+			}
+			if pOr.IsOperator(OperatorGreaterThan) {
+				if len(pOr.Values) != 1 {
+					return nil, fmt.Errorf(`predicate must have only one value when operator is greater than`)
+				}
+				orExprs = append(orExprs, cond.GreaterThan(pOr.Field, pOr.Values[0]))
 			}
 		}
 
