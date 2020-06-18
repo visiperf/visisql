@@ -2,9 +2,11 @@ package visisql
 
 import (
 	"database/sql"
+	"fmt"
+	"reflect"
+
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/mitchellh/mapstructure"
-	"reflect"
 )
 
 type SelectService struct {
@@ -169,7 +171,7 @@ func (ss *SelectService) Get(fields []string, from string, joins []*Join, predic
 func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
 	cols, err := row.Columns()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("visisql row columns: %w", &ScanError{err})
 	}
 
 	vals := make([]interface{}, len(cols))
@@ -178,7 +180,7 @@ func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error)
 	}
 
 	if err := row.Scan(vals...); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("visisql row scan: %w", &ScanError{err})
 	}
 
 	res := make(map[string]interface{})
@@ -192,8 +194,12 @@ func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error)
 func (ss *SelectService) hydrateStruct(data map[string]interface{}, v interface{}) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "sql", Result: v})
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql struct decoder: %w", &ScanError{err})
 	}
 
-	return decoder.Decode(data)
+	if err := decoder.Decode(data); err != nil {
+		return fmt.Errorf("visisql struct hydration: %w", &ScanError{err})
+	}
+
+	return nil
 }
