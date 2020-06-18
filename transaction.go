@@ -157,9 +157,17 @@ func (ts *TransactionService) Delete(from string, predicates [][]*Predicate) err
 }
 
 func (ts *TransactionService) Rollback() error {
-	return ts.tx.Rollback()
+	if err := ts.tx.Rollback(); err != nil {
+		return fmt.Errorf("visisql rollback: %w", err)
+	}
+
+	return nil
 }
 
 func (ts *TransactionService) Commit() error {
-	return ts.tx.Commit()
+	if err := ts.tx.Commit(); err != nil {
+		return fmt.Errorf("visisql commit: %w", err)
+	}
+
+	return nil
 }
