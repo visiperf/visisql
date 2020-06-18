@@ -87,7 +87,7 @@ func (ss *SelectService) List(fields []string, from string, joins []*Join, predi
 	// predicates
 	sPs, err := predicatesToStrings(predicates, &builderRs.Cond)
 	if err != nil {
-		return 0, 0, 0, err
+		return 0, 0, 0, fmt.Errorf("visisql list predicates: %w", err)
 	}
 	builderRs.Where(sPs...)
 
@@ -114,7 +114,7 @@ func (ss *SelectService) List(fields []string, from string, joins []*Join, predi
 	queryRs, argsRs := builderRs.Build()
 
 	if err := ss.Query(queryRs, argsRs, v); err != nil {
-		return 0, 0, 0, err
+		return 0, 0, 0, fmt.Errorf("visisql list query: %w", err)
 	}
 
 	builderRs.Select("count(*) over () as total_count")
@@ -139,7 +139,7 @@ func (ss *SelectService) List(fields []string, from string, joins []*Join, predi
 	}{}
 
 	if err = ss.QueryRow(queryC, argsC, &CountSql); err != nil && err != sql.ErrNoRows {
-		return 0, 0, 0, err
+		return 0, 0, 0, fmt.Errorf("visisql list count query: %w", err)
 	}
 
 	return CountSql.Count, CountSql.TotalCount, CountSql.PageCount, nil
