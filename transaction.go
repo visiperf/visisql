@@ -117,7 +117,7 @@ func (ts *TransactionService) Update(table string, set map[string]interface{}, p
 
 	sPs, err := predicatesToStrings(predicates, &builder.Cond)
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql update predicates: %w", err)
 	}
 	builder.Where(sPs...)
 
@@ -125,9 +125,9 @@ func (ts *TransactionService) Update(table string, set map[string]interface{}, p
 
 	if _, err := ts.tx.Exec(query, args...); err != nil {
 		if rErr := ts.tx.Rollback(); rErr != nil {
-			return rErr
+			return fmt.Errorf("visisql update rollback: %w", rErr)
 		}
-		return err
+		return fmt.Errorf("visisql update query: %w", &QueryError{err})
 	}
 
 	return nil
