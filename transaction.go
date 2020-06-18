@@ -140,7 +140,7 @@ func (ts *TransactionService) Delete(from string, predicates [][]*Predicate) err
 
 	sPs, err := predicatesToStrings(predicates, &builder.Cond)
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql delete predicates: %w", err)
 	}
 	builder.Where(sPs...)
 
@@ -148,9 +148,9 @@ func (ts *TransactionService) Delete(from string, predicates [][]*Predicate) err
 
 	if _, err := ts.tx.Exec(query, args...); err != nil {
 		if rErr := ts.tx.Rollback(); rErr != nil {
-			return rErr
+			return fmt.Errorf("visisql delete rollback: %w", rErr)
 		}
-		return err
+		return fmt.Errorf("visisql delete query: %w", &QueryError{err})
 	}
 
 	return nil
