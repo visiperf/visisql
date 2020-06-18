@@ -161,7 +161,7 @@ func (ss *SelectService) Get(fields []string, from string, joins []*Join, predic
 
 	sPs, err := predicatesToStrings(predicates, &builder.Cond)
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql get predicates: %w", err)
 	}
 	builder.Where(sPs...)
 
@@ -169,7 +169,11 @@ func (ss *SelectService) Get(fields []string, from string, joins []*Join, predic
 
 	query, args := builder.Build()
 
-	return ss.QueryRow(query, args, v)
+	if err := ss.QueryRow(query, args, v); err != nil {
+		return fmt.Errorf("visisql get query: %w", err)
+	}
+
+	return nil
 }
 
 func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
