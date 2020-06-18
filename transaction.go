@@ -42,16 +42,16 @@ func (ts *TransactionService) Insert(into string, values map[string]interface{},
 		row := ts.tx.QueryRow(fmt.Sprintf("%s returning %s", query, returning), args...)
 		if err := row.Scan(&resp); err != nil {
 			if rErr := ts.tx.Rollback(); rErr != nil {
-				return nil, rErr
+				return nil, fmt.Errorf("visisql insert rollback: %w", rErr)
 			}
-			return nil, err
+			return nil, fmt.Errorf("visisql insert query: %w", &QueryError{err})
 		}
 	} else {
 		if _, err := ts.tx.Exec(query, args...); err != nil {
 			if rErr := ts.tx.Rollback(); rErr != nil {
-				return nil, rErr
+				return nil, fmt.Errorf("visisql insert rollback: %w", rErr)
 			}
-			return nil, err
+			return nil, fmt.Errorf("visisql insert query: %w", &QueryError{err})
 		}
 	}
 
