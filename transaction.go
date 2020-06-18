@@ -3,6 +3,7 @@ package visisql
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/huandu/go-sqlbuilder"
 )
 
@@ -13,7 +14,7 @@ type TransactionService struct {
 func NewTransactionService(db *sql.DB) (*TransactionService, error) {
 	tx, err := db.Begin()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("visisql transaction begin: %w", err)
 	}
 
 	return &TransactionService{tx: tx}, nil
