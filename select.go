@@ -20,7 +20,7 @@ func NewSelectService(db *sql.DB) *SelectService {
 func (ss *SelectService) Query(query string, args []interface{}, v interface{}) error {
 	rows, err := ss.db.Query(query, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql query execution: %w", &QueryError{err})
 	}
 	defer rows.Close()
 
@@ -28,12 +28,12 @@ func (ss *SelectService) Query(query string, args []interface{}, v interface{}) 
 	for rows.Next() {
 		data, err := ss.rowToMap(rows)
 		if err != nil {
-			return err
+			return fmt.Errorf("visisql query mapping: %w", err)
 		}
 
 		item := reflect.New(reflect.TypeOf(v).Elem().Elem().Elem())
 		if err := ss.hydrateStruct(data, item.Interface()); err != nil {
-			return err
+			return fmt.Errorf("visisql query hydration: %w", err)
 		}
 
 		slice.Set(reflect.Append(slice, item))
@@ -45,24 +45,28 @@ func (ss *SelectService) Query(query string, args []interface{}, v interface{}) 
 func (ss *SelectService) QueryRow(query string, args []interface{}, v interface{}) error {
 	rows, err := ss.db.Query(query, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql query row execution: %w", &QueryError{err})
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
 		if err := rows.Err(); err != nil {
-			return err
+			return fmt.Errorf("visisql query row parsing: %w", &QueryError{err})
 		}
 
-		return sql.ErrNoRows
+		return fmt.Errorf("visisql query row parsing: %w", sql.ErrNoRows)
 	}
 
 	data, err := ss.rowToMap(rows)
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql query row mapping: %w", err)
 	}
 
-	return ss.hydrateStruct(data, v)
+	if err := ss.hydrateStruct(data, v); err != nil {
+		return fmt.Errorf("visisql query row hydration: %w", err)
+	}
+
+	return nil
 }
 
 func (ss *SelectService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
