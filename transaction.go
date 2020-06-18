@@ -73,7 +73,7 @@ func (ts *TransactionService) InsertMultiple(into string, fields []string, value
 
 	stmt, err := ts.tx.Prepare(query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("visisql insert multiple statement preparation: %w", err)
 	}
 
 	var resps []interface{}
@@ -84,18 +84,18 @@ func (ts *TransactionService) InsertMultiple(into string, fields []string, value
 			row := stmt.QueryRow(args...)
 			if err := row.Scan(&resp); err != nil {
 				if rErr := ts.tx.Rollback(); rErr != nil {
-					return nil, rErr
+					return nil, fmt.Errorf("visisql insert multiple rollback: %w", rErr)
 				}
-				return nil, err
+				return nil, fmt.Errorf("visisql insert multiple query: %w", &QueryError{err})
 			}
 
 			resps = append(resps, resp)
 		} else {
 			if _, err := stmt.Exec(args...); err != nil {
 				if rErr := ts.tx.Rollback(); rErr != nil {
-					return nil, rErr
+					return nil, fmt.Errorf("visisql insert multiple rollback: %w", rErr)
 				}
-				return nil, err
+				return nil, fmt.Errorf("visisql insert multiple query: %w", &QueryError{err})
 			}
 		}
 	}
