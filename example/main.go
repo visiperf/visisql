@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/visiperf/visisql"
+	"github.com/visiperf/visisql/v2"
 
 	_ "github.com/lib/pq"
 )
