@@ -73,7 +73,7 @@ func (ts *TransactionService) InsertMultiple(into string, fields []string, value
 
 	stmt, err := ts.tx.Prepare(query)
 	if err != nil {
-		return nil, fmt.Errorf("visisql insert multiple statement preparation: %w", err)
+		return nil, fmt.Errorf("visisql insert multiple statement preparation: %w", &QueryError{err})
 	}
 
 	var resps []interface{}
