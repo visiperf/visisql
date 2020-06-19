@@ -2,9 +2,11 @@ package visisql
 
 import (
 	"database/sql"
+	"fmt"
+	"reflect"
+
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/mitchellh/mapstructure"
-	"reflect"
 )
 
 type SelectService struct {
@@ -18,7 +20,7 @@ func NewSelectService(db *sql.DB) *SelectService {
 func (ss *SelectService) Query(query string, args []interface{}, v interface{}) error {
 	rows, err := ss.db.Query(query, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql query execution: %w", &QueryError{err})
 	}
 	defer rows.Close()
 
@@ -26,12 +28,12 @@ func (ss *SelectService) Query(query string, args []interface{}, v interface{}) 
 	for rows.Next() {
 		data, err := ss.rowToMap(rows)
 		if err != nil {
-			return err
+			return fmt.Errorf("visisql query mapping: %w", err)
 		}
 
 		item := reflect.New(reflect.TypeOf(v).Elem().Elem().Elem())
 		if err := ss.hydrateStruct(data, item.Interface()); err != nil {
-			return err
+			return fmt.Errorf("visisql query hydration: %w", err)
 		}
 
 		slice.Set(reflect.Append(slice, item))
@@ -43,24 +45,28 @@ func (ss *SelectService) Query(query string, args []interface{}, v interface{}) 
 func (ss *SelectService) QueryRow(query string, args []interface{}, v interface{}) error {
 	rows, err := ss.db.Query(query, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql query row execution: %w", &QueryError{err})
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
 		if err := rows.Err(); err != nil {
-			return err
+			return fmt.Errorf("visisql query row parsing: %w", &QueryError{err})
 		}
 
-		return sql.ErrNoRows
+		return fmt.Errorf("visisql query row parsing: %w", sql.ErrNoRows)
 	}
 
 	data, err := ss.rowToMap(rows)
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql query row mapping: %w", err)
 	}
 
-	return ss.hydrateStruct(data, v)
+	if err := ss.hydrateStruct(data, v); err != nil {
+		return fmt.Errorf("visisql query row hydration: %w", err)
+	}
+
+	return nil
 }
 
 func (ss *SelectService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
@@ -81,7 +87,7 @@ func (ss *SelectService) List(fields []string, from string, joins []*Join, predi
 	// predicates
 	sPs, err := predicatesToStrings(predicates, &builderRs.Cond)
 	if err != nil {
-		return 0, 0, 0, err
+		return 0, 0, 0, fmt.Errorf("visisql list predicates: %w", err)
 	}
 	builderRs.Where(sPs...)
 
@@ -108,7 +114,7 @@ func (ss *SelectService) List(fields []string, from string, joins []*Join, predi
 	queryRs, argsRs := builderRs.Build()
 
 	if err := ss.Query(queryRs, argsRs, v); err != nil {
-		return 0, 0, 0, err
+		return 0, 0, 0, fmt.Errorf("visisql list query: %w", err)
 	}
 
 	builderRs.Select("count(*) over () as total_count")
@@ -133,7 +139,7 @@ func (ss *SelectService) List(fields []string, from string, joins []*Join, predi
 	}{}
 
 	if err = ss.QueryRow(queryC, argsC, &CountSql); err != nil && err != sql.ErrNoRows {
-		return 0, 0, 0, err
+		return 0, 0, 0, fmt.Errorf("visisql list count query: %w", err)
 	}
 
 	return CountSql.Count, CountSql.TotalCount, CountSql.PageCount, nil
@@ -155,7 +161,7 @@ func (ss *SelectService) Get(fields []string, from string, joins []*Join, predic
 
 	sPs, err := predicatesToStrings(predicates, &builder.Cond)
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql get predicates: %w", err)
 	}
 	builder.Where(sPs...)
 
@@ -163,13 +169,17 @@ func (ss *SelectService) Get(fields []string, from string, joins []*Join, predic
 
 	query, args := builder.Build()
 
-	return ss.QueryRow(query, args, v)
+	if err := ss.QueryRow(query, args, v); err != nil {
+		return fmt.Errorf("visisql get query: %w", err)
+	}
+
+	return nil
 }
 
 func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
 	cols, err := row.Columns()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("visisql row columns: %w", err)
 	}
 
 	vals := make([]interface{}, len(cols))
@@ -178,7 +188,7 @@ func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error)
 	}
 
 	if err := row.Scan(vals...); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("visisql row scan: %w", err)
 	}
 
 	res := make(map[string]interface{})
@@ -192,8 +202,12 @@ func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error)
 func (ss *SelectService) hydrateStruct(data map[string]interface{}, v interface{}) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "sql", Result: v})
 	if err != nil {
-		return err
+		return fmt.Errorf("visisql struct decoder: %w", err)
 	}
 
-	return decoder.Decode(data)
+	if err := decoder.Decode(data); err != nil {
+		return fmt.Errorf("visisql struct hydration: %w", err)
+	}
+
+	return nil
 }
