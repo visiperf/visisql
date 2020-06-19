@@ -179,7 +179,7 @@ func (ss *SelectService) Get(fields []string, from string, joins []*Join, predic
 func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
 	cols, err := row.Columns()
 	if err != nil {
-		return nil, fmt.Errorf("visisql row columns: %w", &ScanError{err})
+		return nil, fmt.Errorf("visisql row columns: %w", err)
 	}
 
 	vals := make([]interface{}, len(cols))
@@ -188,7 +188,7 @@ func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error)
 	}
 
 	if err := row.Scan(vals...); err != nil {
-		return nil, fmt.Errorf("visisql row scan: %w", &ScanError{err})
+		return nil, fmt.Errorf("visisql row scan: %w", err)
 	}
 
 	res := make(map[string]interface{})
@@ -202,11 +202,11 @@ func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error)
 func (ss *SelectService) hydrateStruct(data map[string]interface{}, v interface{}) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "sql", Result: v})
 	if err != nil {
-		return fmt.Errorf("visisql struct decoder: %w", &ScanError{err})
+		return fmt.Errorf("visisql struct decoder: %w", err)
 	}
 
 	if err := decoder.Decode(data); err != nil {
-		return fmt.Errorf("visisql struct hydration: %w", &ScanError{err})
+		return fmt.Errorf("visisql struct hydration: %w", err)
 	}
 
 	return nil
