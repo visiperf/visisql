@@ -177,7 +177,7 @@ func insertMultiple(db *sql.DB) error {
 
 func list(db *sql.DB) ([]*Site, error) {
 	var sites []*Site
-	if _, _, _, err := visisql.NewSelectService(db).List([]string{"id", "url", "image"}, TABLE_NAME, nil, nil, nil, nil, nil, &sites); err != nil {
+	if _, _, _, err := visisql.NewSelectService(db).Search([]string{"id", "url", "image"}, TABLE_NAME, nil, nil, nil, nil, nil, &sites); err != nil {
 		return nil, fmt.Errorf("list failed to fetch sites: %w", err)
 	}
 

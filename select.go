@@ -9,15 +9,31 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type SelectService struct {
+type SelectService interface {
+	Build(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination) (string, []interface{}, error)
+	Query(query string, args []interface{}, v interface{}) error
+	QueryRow(query string, args []interface{}, v interface{}) error
+	Search(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error)
+	Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error
+}
+
+type selectService struct {
 	db *sql.DB
 }
 
-func NewSelectService(db *sql.DB) *SelectService {
-	return &SelectService{db: db}
+func NewSelectService(db *sql.DB) SelectService {
+	return &selectService{db: db}
 }
 
-func (ss *SelectService) Query(query string, args []interface{}, v interface{}) error {
+func (ss *selectService) Build(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination) (string, []interface{}, error) {
+	return "", nil, fmt.Errorf("not implemented")
+}
+
+func (ss *selectService) Search(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
+	return 0, 0, 0, nil
+}
+
+func (ss *selectService) Query(query string, args []interface{}, v interface{}) error {
 	rows, err := ss.db.Query(query, args...)
 	if err != nil {
 		return fmt.Errorf("visisql query execution: %w", &QueryError{err})
@@ -42,7 +58,7 @@ func (ss *SelectService) Query(query string, args []interface{}, v interface{}) 
 	return nil
 }
 
-func (ss *SelectService) QueryRow(query string, args []interface{}, v interface{}) error {
+func (ss *selectService) QueryRow(query string, args []interface{}, v interface{}) error {
 	rows, err := ss.db.Query(query, args...)
 	if err != nil {
 		return fmt.Errorf("visisql query row execution: %w", &QueryError{err})
@@ -69,7 +85,7 @@ func (ss *SelectService) QueryRow(query string, args []interface{}, v interface{
 	return nil
 }
 
-func (ss *SelectService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
+func (ss *selectService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
 	builderRs := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
 	// from
@@ -145,7 +161,7 @@ func (ss *SelectService) List(fields []string, from string, joins []*Join, predi
 	return CountSql.Count, CountSql.TotalCount, CountSql.PageCount, nil
 }
 
-func (ss *SelectService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
+func (ss *selectService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
 	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
 	builder.Select(fields...)
@@ -176,7 +192,7 @@ func (ss *SelectService) Get(fields []string, from string, joins []*Join, predic
 	return nil
 }
 
-func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
+func (ss *selectService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
 	cols, err := row.Columns()
 	if err != nil {
 		return nil, fmt.Errorf("visisql row columns: %w", err)
@@ -199,7 +215,7 @@ func (ss *SelectService) rowToMap(row *sql.Rows) (map[string]interface{}, error)
 	return res, nil
 }
 
-func (ss *SelectService) hydrateStruct(data map[string]interface{}, v interface{}) error {
+func (ss *selectService) hydrateStruct(data map[string]interface{}, v interface{}) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "sql", Result: v})
 	if err != nil {
 		return fmt.Errorf("visisql struct decoder: %w", err)
