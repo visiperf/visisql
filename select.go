@@ -27,7 +27,44 @@ func NewSelectService(db *sqlx.DB) SelectService {
 }
 
 func (ss *selectService) Build(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination) (string, []interface{}, error) {
-	return "", nil, fmt.Errorf("not implemented")
+	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
+
+	builder.Select(fields...)
+	builder.From(from)
+
+	for _, j := range joins {
+		if j.option == InnerJoin {
+			builder.Join(j.table, j.on)
+		} else {
+			builder.JoinWithOption(sqlbuilder.JoinOption(j.option), j.table, j.on)
+		}
+	}
+
+	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	if err != nil {
+		return "", nil, fmt.Errorf("visisql get predicates: %w", err)
+	}
+	builder.Where(sPs...)
+
+	builder.GroupBy(groupBy...)
+
+	var ob []string
+	for _, o := range orderBy {
+		ob = append(ob, o.toString())
+	}
+	builder.OrderBy(ob...)
+
+	if pagination != nil {
+		builder.Offset(pagination.Start)
+
+		if pagination.Limit != 0 {
+			builder.Limit(pagination.Limit)
+		}
+	}
+
+	query, args := builder.Build()
+
+	return query, args, nil
 }
 
 func (ss *selectService) Search(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
