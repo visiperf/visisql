@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/visiperf/visisql/v2"
 
 	_ "github.com/lib/pq"
@@ -30,12 +31,12 @@ func (s *Site) String() string {
 }
 
 func main() {
-	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?%s", PG_USER, PG_PWD, PG_HOST, PG_PORT, PG_DB_NAME, PG_OPTIONS))
+	db, err := sqlx.Connect("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s %s", PG_HOST, PG_PORT, PG_USER, PG_PWD, PG_DB_NAME, PG_OPTIONS))
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
 
-	id, err := insert(db)
+	id, err := insert(db.DB)
 	if err != nil {
 		log.Fatalf("failed to insert: %v", err)
 	}
@@ -46,7 +47,7 @@ func main() {
 	}
 	fmt.Println(s)
 
-	if err := update(db, id); err != nil {
+	if err := update(db.DB, id); err != nil {
 		log.Fatalf("failed to update: %v", err)
 	}
 
@@ -56,11 +57,11 @@ func main() {
 	}
 	fmt.Println(s)
 
-	if err := remove(db, id); err != nil {
+	if err := remove(db.DB, id); err != nil {
 		log.Fatalf("failed to delete: %v", err)
 	}
 
-	if err := insertMultiple(db); err != nil {
+	if err := insertMultiple(db.DB); err != nil {
 		log.Fatalf("failed to insert multiple: %v", err)
 	}
 
@@ -94,7 +95,7 @@ func insert(db *sql.DB) (interface{}, error) {
 	return id, nil
 }
 
-func get(db *sql.DB, id interface{}) (*Site, error) {
+func get(db *sqlx.DB, id interface{}) (*Site, error) {
 	predicates := [][]*visisql.Predicate{{
 		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
 	}}
@@ -175,7 +176,7 @@ func insertMultiple(db *sql.DB) error {
 	return nil
 }
 
-func list(db *sql.DB) ([]*Site, error) {
+func list(db *sqlx.DB) ([]*Site, error) {
 	var sites []*Site
 	if _, _, _, err := visisql.NewSelectService(db).Search([]string{"id", "url", "image"}, TABLE_NAME, nil, nil, nil, nil, nil, &sites); err != nil {
 		return nil, fmt.Errorf("list failed to fetch sites: %w", err)

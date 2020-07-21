@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -18,10 +19,10 @@ type SelectService interface {
 }
 
 type selectService struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewSelectService(db *sql.DB) SelectService {
+func NewSelectService(db *sqlx.DB) SelectService {
 	return &selectService{db: db}
 }
 
