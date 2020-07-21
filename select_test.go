@@ -106,6 +106,26 @@ func TestBuild(t *testing.T) {
 			err:   &QueryError{errOperatorEqual},
 		},
 	}, {
+		Message: "ok without order by and pagination",
+		Req: &BuildReq{
+			fields: []string{"id", "email", "roles", "created_at"},
+			from:   "user",
+			joins: []*Join{
+				NewJoin(LeftJoin, "company", "user.company_id = company.id"),
+			},
+			predicates: [][]*Predicate{{
+				NewPredicate("user.id", OperatorEqual, []interface{}{1}),
+			}},
+			groupBy:    []string{"user.id"},
+			orderBy:    nil,
+			pagination: nil,
+		},
+		Resp: &BuildResp{
+			query: `SELECT id, email, roles, created_at FROM user LEFT JOIN company ON user.company_id = company.id WHERE ( user.id = $1 ) GROUP BY user.id`,
+			args:  []interface{}{1},
+			err:   nil,
+		},
+	}, {
 		Message: "ok",
 		Req: &BuildReq{
 			fields: []string{"id", "email", "roles", "created_at"},
