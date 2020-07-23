@@ -27,39 +27,9 @@ func NewSelectService(db *sqlx.DB) SelectService {
 }
 
 func (ss *selectService) Build(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination) (string, []interface{}, error) {
-	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
-
-	builder.Select(fields...)
-	builder.From(from)
-
-	for _, j := range joins {
-		if j.option == InnerJoin {
-			builder.Join(j.table, j.on)
-		} else {
-			builder.JoinWithOption(sqlbuilder.JoinOption(j.option), j.table, j.on)
-		}
-	}
-
-	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	builder, err := ss.newBuilder(fields, from, joins, predicates, groupBy, orderBy, pagination)
 	if err != nil {
 		return "", nil, err
-	}
-	builder.Where(sPs...)
-
-	builder.GroupBy(groupBy...)
-
-	var ob []string
-	for _, o := range orderBy {
-		ob = append(ob, o.toString())
-	}
-	builder.OrderBy(ob...)
-
-	if pagination != nil {
-		builder.Offset(pagination.Start)
-
-		if pagination.Limit != 0 {
-			builder.Limit(pagination.Limit)
-		}
 	}
 
 	query, args := builder.Build()
@@ -233,4 +203,43 @@ func (ss *selectService) hydrateStruct(data map[string]interface{}, v interface{
 	}
 
 	return nil
+}
+
+func (ss *selectService) newBuilder(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination) (*sqlbuilder.SelectBuilder, error) {
+	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
+
+	builder.Select(fields...)
+	builder.From(from)
+
+	for _, j := range joins {
+		if j.option == InnerJoin {
+			builder.Join(j.table, j.on)
+		} else {
+			builder.JoinWithOption(sqlbuilder.JoinOption(j.option), j.table, j.on)
+		}
+	}
+
+	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	if err != nil {
+		return nil, err
+	}
+	builder.Where(sPs...)
+
+	builder.GroupBy(groupBy...)
+
+	var ob []string
+	for _, o := range orderBy {
+		ob = append(ob, o.toString())
+	}
+	builder.OrderBy(ob...)
+
+	if pagination != nil {
+		builder.Offset(pagination.Start)
+
+		if pagination.Limit != 0 {
+			builder.Limit(pagination.Limit)
+		}
+	}
+
+	return builder, nil
 }
