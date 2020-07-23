@@ -68,7 +68,7 @@ func (ss *selectService) Build(fields []string, from string, joins []*Join, pred
 }
 
 func (ss *selectService) Query(query string, args []interface{}, v interface{}) error {
-	rows, err := ss.db.Query(query, args...)
+	rows, err := ss.db.Queryx(query, args...)
 	if err != nil {
 		return fmt.Errorf("visisql query execution: %w", &QueryError{err})
 	}
@@ -76,14 +76,10 @@ func (ss *selectService) Query(query string, args []interface{}, v interface{}) 
 
 	slice := reflect.ValueOf(v).Elem()
 	for rows.Next() {
-		data, err := ss.rowToMap(rows)
-		if err != nil {
-			return fmt.Errorf("visisql query mapping: %w", err)
-		}
-
 		item := reflect.New(reflect.TypeOf(v).Elem().Elem().Elem())
-		if err := ss.hydrateStruct(data, item.Interface()); err != nil {
-			return fmt.Errorf("visisql query hydration: %w", err)
+
+		if err := rows.StructScan(item.Interface()); err != nil {
+			return fmt.Errorf("visisql struct scan: %w", &ScanError{err})
 		}
 
 		slice.Set(reflect.Append(slice, item))
