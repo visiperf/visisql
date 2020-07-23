@@ -42,7 +42,7 @@ func (ss *selectService) Build(fields []string, from string, joins []*Join, pred
 
 	sPs, err := predicatesToStrings(predicates, &builder.Cond)
 	if err != nil {
-		return "", nil, fmt.Errorf("visisql get predicates: %w", err)
+		return "", nil, err
 	}
 	builder.Where(sPs...)
 
