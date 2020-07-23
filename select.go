@@ -81,7 +81,38 @@ func (ss *selectService) QueryRow(query string, args []interface{}, v interface{
 }
 
 func (ss *selectService) Search(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
-	return 0, 0, 0, nil
+	builderRs, err := ss.newBuilder(fields, from, joins, predicates, groupBy, orderBy, pagination)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	queryRs, argsRs := builderRs.Build()
+
+	if err := ss.Query(queryRs, argsRs, v); err != nil {
+		return 0, 0, 0, fmt.Errorf("visisql records: %w", err)
+	}
+
+	builderRs.Select("count(*) over () as total_count")
+
+	builderC := sqlbuilder.PostgreSQL.NewSelectBuilder()
+
+	builderC.Select("count(*) as count", "total_count", "ceil(total_count::decimal / count(*))::integer as page_count")
+	builderC.From(builderC.BuilderAs(builderRs, "results"))
+	builderC.GroupBy("total_count")
+
+	queryC, argsC := builderC.Build()
+
+	var CountSql = struct {
+		Count      int64 `db:"count"`
+		TotalCount int64 `db:"total_count"`
+		PageCount  int64 `db:"page_count"`
+	}{}
+
+	if err = ss.QueryRow(queryC, argsC, &CountSql); err != nil && err != sql.ErrNoRows {
+		return 0, 0, 0, fmt.Errorf("visisql count: %w", err)
+	}
+
+	return CountSql.Count, CountSql.TotalCount, CountSql.PageCount, nil
 }
 
 func (ss *selectService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
