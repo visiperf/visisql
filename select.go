@@ -89,27 +89,22 @@ func (ss *selectService) Query(query string, args []interface{}, v interface{}) 
 }
 
 func (ss *selectService) QueryRow(query string, args []interface{}, v interface{}) error {
-	rows, err := ss.db.Query(query, args...)
+	rows, err := ss.db.Queryx(query, args...)
 	if err != nil {
-		return fmt.Errorf("visisql query row execution: %w", &QueryError{err})
+		return fmt.Errorf("visisql query execution: %w", &QueryError{err})
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
 		if err := rows.Err(); err != nil {
-			return fmt.Errorf("visisql query row parsing: %w", &QueryError{err})
+			return fmt.Errorf("visisql query execution: %w", &QueryError{err})
 		}
 
-		return fmt.Errorf("visisql query row parsing: %w", sql.ErrNoRows)
+		return fmt.Errorf("visisql row parsing: %w", sql.ErrNoRows)
 	}
 
-	data, err := ss.rowToMap(rows)
-	if err != nil {
-		return fmt.Errorf("visisql query row mapping: %w", err)
-	}
-
-	if err := ss.hydrateStruct(data, v); err != nil {
-		return fmt.Errorf("visisql query row hydration: %w", err)
+	if err := rows.StructScan(v); err != nil {
+		return fmt.Errorf("visisql struct scan: %w", &ScanError{err})
 	}
 
 	return nil
