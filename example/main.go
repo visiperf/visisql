@@ -77,7 +77,7 @@ func main() {
 		log.Fatalf("failed to open database: %v", err)
 	}
 
-	q, args, err := build(db)
+	q, args, err := build(db, 1)
 	if err != nil {
 		log.Fatalf("failed to build: %v", err)
 	}
@@ -92,13 +92,13 @@ func main() {
 		fmt.Println(c, c.Phones)
 	}
 
-	company, err := queryRow(db)
+	company, err := queryRow(db, 1)
 	if err != nil {
 		log.Fatalf("failed to query row: %v", err)
 	}
 	fmt.Println(company, company.Phones)
 
-	company, err = get(db)
+	company, err = get(db, 2)
 	if err != nil {
 		log.Fatalf("failed to get: %v", err)
 	}
@@ -106,17 +106,37 @@ func main() {
 
 	companies, c, tc, pc, err := search(db)
 	if err != nil {
-		log.Fatalf("failed to query: %v", err)
+		log.Fatalf("failed to search: %v", err)
 	}
 	for _, c := range companies {
 		fmt.Println(c, c.Phones)
 	}
 	fmt.Println(c, tc, pc)
+
+	id, err := insert(db)
+	if err != nil {
+		log.Fatalf("failed to insert: %v", err)
+	}
+	fmt.Println(id)
+
+	if err := update(db, 4); err != nil {
+		log.Fatalf("failed to update: %v", err)
+	}
+
+	if err := remove(db, 4); err != nil {
+		log.Fatalf("failed to delete: %v", err)
+	}
+
+	ids, err := insertMultiple(db)
+	if err != nil {
+		log.Fatalf("failed to insert multiple: %v", err)
+	}
+	fmt.Println(ids)
 }
 
-func build(db *sqlx.DB) (string, []interface{}, error) {
+func build(db *sqlx.DB, id interface{}) (string, []interface{}, error) {
 	return visisql.NewSelectService(db).Build(schema.fields, schema.tableName, nil, [][]*visisql.Predicate{{
-		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{1}),
+		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
 	}}, nil, nil, nil)
 }
 
@@ -141,7 +161,7 @@ func query(db *sqlx.DB) ([]*Company, error) {
 	return companies, nil
 }
 
-func queryRow(db *sqlx.DB) (*Company, error) {
+func queryRow(db *sqlx.DB, id interface{}) (*Company, error) {
 	defer func() {
 		db.Exec(schema.drop)
 	}()
@@ -155,14 +175,14 @@ func queryRow(db *sqlx.DB) (*Company, error) {
 	}
 
 	var company Company
-	if err := visisql.NewSelectService(db).QueryRow(`SELECT * FROM company WHERE id = $1`, []interface{}{1}, &company); err != nil {
+	if err := visisql.NewSelectService(db).QueryRow(`SELECT * FROM company WHERE id = $1`, []interface{}{id}, &company); err != nil {
 		return nil, err
 	}
 
 	return &company, nil
 }
 
-func get(db *sqlx.DB) (*Company, error) {
+func get(db *sqlx.DB, id interface{}) (*Company, error) {
 	defer func() {
 		db.Exec(schema.drop)
 	}()
@@ -177,7 +197,7 @@ func get(db *sqlx.DB) (*Company, error) {
 
 	var company Company
 	if err := visisql.NewSelectService(db).Get(schema.fields, schema.tableName, nil, [][]*visisql.Predicate{{
-		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{2}),
+		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
 	}}, nil, &company); err != nil {
 		return nil, err
 	}
@@ -208,4 +228,119 @@ func search(db *sqlx.DB) ([]*Company, int64, int64, int64, error) {
 	}
 
 	return companies, c, tc, pc, nil
+}
+
+func insert(db *sqlx.DB) (interface{}, error) {
+	defer func() {
+		db.Exec(schema.drop)
+	}()
+
+	if _, err := db.Exec(schema.create); err != nil {
+		return nil, err
+	}
+
+	if _, err := db.Exec(schema.mocks); err != nil {
+		return nil, err
+	}
+
+	tx, err := visisql.NewTransactionService(db)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := tx.Insert(schema.tableName, map[string]interface{}{
+		`name`:   `Microsoft`,
+		`phones`: []byte(`["04.05.06.07"]`),
+	}, "id")
+	if err != nil {
+		return nil, err
+	}
+
+	return id, tx.Commit()
+}
+
+func update(db *sqlx.DB, id interface{}) error {
+	defer func() {
+		db.Exec(schema.drop)
+	}()
+
+	if _, err := db.Exec(schema.create); err != nil {
+		return err
+	}
+
+	if _, err := db.Exec(schema.mocks); err != nil {
+		return err
+	}
+
+	tx, err := visisql.NewTransactionService(db)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Update(schema.tableName, map[string]interface{}{
+		`name`: `Microsoft`,
+	}, [][]*visisql.Predicate{{
+		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
+	}}); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func remove(db *sqlx.DB, id interface{}) error {
+	defer func() {
+		db.Exec(schema.drop)
+	}()
+
+	if _, err := db.Exec(schema.create); err != nil {
+		return err
+	}
+
+	if _, err := db.Exec(schema.mocks); err != nil {
+		return err
+	}
+
+	tx, err := visisql.NewTransactionService(db)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Delete(schema.tableName, [][]*visisql.Predicate{{
+		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
+	}}); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func insertMultiple(db *sqlx.DB) ([]interface{}, error) {
+	defer func() {
+		db.Exec(schema.drop)
+	}()
+
+	if _, err := db.Exec(schema.create); err != nil {
+		return nil, err
+	}
+
+	if _, err := db.Exec(schema.mocks); err != nil {
+		return nil, err
+	}
+
+	tx, err := visisql.NewTransactionService(db)
+	if err != nil {
+		return nil, err
+	}
+
+	ids, err := tx.InsertMultiple(schema.tableName, []string{"name", "phones"}, [][]interface{}{{
+		`Microsoft`, []byte(`["04.05.06.07"]`),
+	}, {
+		`SpaceX`, []byte(`null`),
+	}}, "id")
+	if err != nil {
+		return nil, err
+	}
+
+	return ids, tx.Commit()
 }
