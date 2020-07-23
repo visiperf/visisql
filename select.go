@@ -7,7 +7,6 @@ import (
 
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jmoiron/sqlx"
-	"github.com/mitchellh/mapstructure"
 )
 
 type SelectService interface {
@@ -122,118 +121,6 @@ func (ss *selectService) Get(fields []string, from string, joins []*Join, predic
 	}
 
 	return ss.QueryRow(query, args, v)
-}
-
-func (ss *selectService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
-	builderRs := sqlbuilder.PostgreSQL.NewSelectBuilder()
-
-	// from
-	builderRs.From(from)
-
-	// joins
-	for _, j := range joins {
-		if j.option == InnerJoin {
-			builderRs.Join(j.table, j.on)
-		} else {
-			builderRs.JoinWithOption(sqlbuilder.JoinOption(j.option), j.table, j.on)
-		}
-	}
-
-	// predicates
-	sPs, err := predicatesToStrings(predicates, &builderRs.Cond)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("visisql list predicates: %w", err)
-	}
-	builderRs.Where(sPs...)
-
-	// group by
-	builderRs.GroupBy(groupBy...)
-
-	// order by
-	var ob []string
-	for _, o := range orderBy {
-		ob = append(ob, o.toString())
-	}
-	builderRs.OrderBy(ob...)
-
-	// pagination
-	if pagination != nil {
-		builderRs.Offset(pagination.Start)
-
-		if pagination.Limit != 0 {
-			builderRs.Limit(pagination.Limit)
-		}
-	}
-
-	builderRs.Select(fields...)
-	queryRs, argsRs := builderRs.Build()
-
-	if err := ss.Query(queryRs, argsRs, v); err != nil {
-		return 0, 0, 0, fmt.Errorf("visisql list query: %w", err)
-	}
-
-	builderRs.Select("count(*) over () as total_count")
-
-	builderC := sqlbuilder.PostgreSQL.NewSelectBuilder()
-
-	// fields
-	builderC.Select("count(*) as count", "total_count", "ceil(total_count::decimal / count(*))::integer as page_count")
-
-	// from
-	builderC.From(builderC.BuilderAs(builderRs, "results"))
-
-	// group by
-	builderC.GroupBy("total_count")
-
-	queryC, argsC := builderC.Build()
-
-	var CountSql = struct {
-		Count      int64 `sql:"count"`
-		TotalCount int64 `sql:"total_count"`
-		PageCount  int64 `sql:"page_count"`
-	}{}
-
-	if err = ss.QueryRow(queryC, argsC, &CountSql); err != nil && err != sql.ErrNoRows {
-		return 0, 0, 0, fmt.Errorf("visisql list count query: %w", err)
-	}
-
-	return CountSql.Count, CountSql.TotalCount, CountSql.PageCount, nil
-}
-
-func (ss *selectService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
-	cols, err := row.Columns()
-	if err != nil {
-		return nil, fmt.Errorf("visisql row columns: %w", err)
-	}
-
-	vals := make([]interface{}, len(cols))
-	for i := range cols {
-		vals[i] = &vals[i]
-	}
-
-	if err := row.Scan(vals...); err != nil {
-		return nil, fmt.Errorf("visisql row scan: %w", err)
-	}
-
-	res := make(map[string]interface{})
-	for i, col := range cols {
-		res[col] = vals[i]
-	}
-
-	return res, nil
-}
-
-func (ss *selectService) hydrateStruct(data map[string]interface{}, v interface{}) error {
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "sql", Result: v})
-	if err != nil {
-		return fmt.Errorf("visisql struct decoder: %w", err)
-	}
-
-	if err := decoder.Decode(data); err != nil {
-		return fmt.Errorf("visisql struct hydration: %w", err)
-	}
-
-	return nil
 }
 
 func (ss *selectService) newBuilder(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination) (*sqlbuilder.SelectBuilder, error) {
