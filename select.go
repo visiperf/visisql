@@ -67,10 +67,6 @@ func (ss *selectService) Build(fields []string, from string, joins []*Join, pred
 	return query, args, nil
 }
 
-func (ss *selectService) Search(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
-	return 0, 0, 0, nil
-}
-
 func (ss *selectService) Query(query string, args []interface{}, v interface{}) error {
 	rows, err := ss.db.Query(query, args...)
 	if err != nil {
@@ -118,6 +114,41 @@ func (ss *selectService) QueryRow(query string, args []interface{}, v interface{
 
 	if err := ss.hydrateStruct(data, v); err != nil {
 		return fmt.Errorf("visisql query row hydration: %w", err)
+	}
+
+	return nil
+}
+
+func (ss *selectService) Search(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
+	return 0, 0, 0, nil
+}
+
+func (ss *selectService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
+	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
+
+	builder.Select(fields...)
+	builder.From(from)
+
+	for _, j := range joins {
+		if j.option == InnerJoin {
+			builder.Join(j.table, j.on)
+		} else {
+			builder.JoinWithOption(sqlbuilder.JoinOption(j.option), j.table, j.on)
+		}
+	}
+
+	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	if err != nil {
+		return fmt.Errorf("visisql get predicates: %w", err)
+	}
+	builder.Where(sPs...)
+
+	builder.GroupBy(groupBy...)
+
+	query, args := builder.Build()
+
+	if err := ss.QueryRow(query, args, v); err != nil {
+		return fmt.Errorf("visisql get query: %w", err)
 	}
 
 	return nil
@@ -197,37 +228,6 @@ func (ss *selectService) List(fields []string, from string, joins []*Join, predi
 	}
 
 	return CountSql.Count, CountSql.TotalCount, CountSql.PageCount, nil
-}
-
-func (ss *selectService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
-	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
-
-	builder.Select(fields...)
-	builder.From(from)
-
-	for _, j := range joins {
-		if j.option == InnerJoin {
-			builder.Join(j.table, j.on)
-		} else {
-			builder.JoinWithOption(sqlbuilder.JoinOption(j.option), j.table, j.on)
-		}
-	}
-
-	sPs, err := predicatesToStrings(predicates, &builder.Cond)
-	if err != nil {
-		return fmt.Errorf("visisql get predicates: %w", err)
-	}
-	builder.Where(sPs...)
-
-	builder.GroupBy(groupBy...)
-
-	query, args := builder.Build()
-
-	if err := ss.QueryRow(query, args, v); err != nil {
-		return fmt.Errorf("visisql get query: %w", err)
-	}
-
-	return nil
 }
 
 func (ss *selectService) rowToMap(row *sql.Rows) (map[string]interface{}, error) {
