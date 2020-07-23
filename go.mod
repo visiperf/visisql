@@ -1,4 +1,4 @@
-module github.com/visiperf/visisql/v2
+module github.com/visiperf/visisql/v3
 
 go 1.13
 
