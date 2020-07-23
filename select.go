@@ -115,34 +115,12 @@ func (ss *selectService) Search(fields []string, from string, joins []*Join, pre
 }
 
 func (ss *selectService) Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error {
-	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
-
-	builder.Select(fields...)
-	builder.From(from)
-
-	for _, j := range joins {
-		if j.option == InnerJoin {
-			builder.Join(j.table, j.on)
-		} else {
-			builder.JoinWithOption(sqlbuilder.JoinOption(j.option), j.table, j.on)
-		}
-	}
-
-	sPs, err := predicatesToStrings(predicates, &builder.Cond)
+	query, args, err := ss.Build(fields, from, joins, predicates, groupBy, nil, nil)
 	if err != nil {
-		return fmt.Errorf("visisql get predicates: %w", err)
-	}
-	builder.Where(sPs...)
-
-	builder.GroupBy(groupBy...)
-
-	query, args := builder.Build()
-
-	if err := ss.QueryRow(query, args, v); err != nil {
-		return fmt.Errorf("visisql get query: %w", err)
+		return err
 	}
 
-	return nil
+	return ss.QueryRow(query, args, v)
 }
 
 func (ss *selectService) List(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []*OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
