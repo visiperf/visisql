@@ -1,186 +1,211 @@
 package main
 
 import (
-	"database/sql"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"os"
+	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/visiperf/visisql/v2"
-
 	_ "github.com/lib/pq"
+	"github.com/visiperf/visisql/v2"
 )
 
-const PG_USER = "PG_USER"
-const PG_PWD = "PG_PASSWORD"
-const PG_HOST = "localhost"
-const PG_PORT = 5432
-const PG_DB_NAME = "PG_DB_NAME"
-const PG_OPTIONS = "sslmode=disable"
+type Phones []string
 
-const TABLE_NAME = "YOUR_TABLE_NAME"
+func (ps *Phones) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
 
-type Site struct {
-	ID    int64  `sql:"id"`
-	URL   string `sql:"url"`
-	Image string `sql:"image"`
+	return json.Unmarshal(b, &ps)
 }
 
-func (s *Site) String() string {
-	return fmt.Sprintf("id: %d - url: %s - image: %s", s.ID, s.URL, s.Image)
+type Company struct {
+	ID        int64      `db:"id"`
+	Name      string     `db:"name"`
+	Phones    *Phones    `db:"phones"`
+	CreatedAt *time.Time `db:"created_at"`
+}
+
+var schema = struct {
+	tableName string
+	fields    []string
+	create    string
+	mocks     string
+	drop      string
+}{
+	tableName: `company`,
+	fields:    []string{`id`, `name`, `phones`, `created_at`},
+	create: `
+		create table company (
+			id 			serial 		primary key,
+			name 		varchar 	unique not null,
+			phones 		jsonb,
+			created_at 	timestamptz not null default now()
+		);
+	`,
+	mocks: `
+		insert into company (name, phones) values 
+			('Google', '["01.02.03.04.05", "02.03.04.05.06"]'),
+			('Apple', '["03.04.05.06.07"]'),
+			('Facebook', '[]'),
+			('Amazon', null);
+	`,
+	drop: `
+		drop table company;
+	`,
+}
+
+func openDatabase() (*sqlx.DB, error) {
+	pghost := os.Getenv("PG_HOST")
+	pgport := os.Getenv("PG_PORT")
+	pguser := os.Getenv("PG_USER")
+	pgpwd := os.Getenv("PG_PWD")
+	pgdbname := os.Getenv("PG_DB_NAME")
+	pgoptions := os.Getenv("PG_OPTIONS")
+
+	return sqlx.Connect("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", pghost, pgport, pguser, pgpwd, pgdbname, pgoptions))
 }
 
 func main() {
-	db, err := sqlx.Connect("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s %s", PG_HOST, PG_PORT, PG_USER, PG_PWD, PG_DB_NAME, PG_OPTIONS))
+	db, err := openDatabase()
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
 
-	id, err := insert(db.DB)
+	q, args, err := build(db)
 	if err != nil {
-		log.Fatalf("failed to insert: %v", err)
+		log.Fatalf("failed to build: %v", err)
+	}
+	fmt.Println("query: ", q)
+	fmt.Println("args: ", args)
+
+	companies, err := query(db)
+	if err != nil {
+		log.Fatalf("failed to query: %v", err)
+	}
+	for _, c := range companies {
+		fmt.Println(c, c.Phones)
 	}
 
-	s, err := get(db, id)
+	company, err := queryRow(db)
+	if err != nil {
+		log.Fatalf("failed to query row: %v", err)
+	}
+	fmt.Println(company, company.Phones)
+
+	company, err = get(db)
 	if err != nil {
 		log.Fatalf("failed to get: %v", err)
 	}
-	fmt.Println(s)
+	fmt.Println(company, company.Phones)
 
-	if err := update(db.DB, id); err != nil {
-		log.Fatalf("failed to update: %v", err)
-	}
-
-	s, err = get(db, id)
+	companies, c, tc, pc, err := search(db)
 	if err != nil {
-		log.Fatalf("failed to get: %v", err)
+		log.Fatalf("failed to query: %v", err)
 	}
-	fmt.Println(s)
-
-	if err := remove(db.DB, id); err != nil {
-		log.Fatalf("failed to delete: %v", err)
+	for _, c := range companies {
+		fmt.Println(c, c.Phones)
 	}
-
-	if err := insertMultiple(db.DB); err != nil {
-		log.Fatalf("failed to insert multiple: %v", err)
-	}
-
-	ss, err := list(db)
-	if err != nil {
-		log.Fatalf("failed to list: %v", err)
-	}
-	fmt.Println(ss)
+	fmt.Println(c, tc, pc)
 }
 
-func insert(db *sql.DB) (interface{}, error) {
-	ts, err := visisql.NewTransactionService(db)
-	if err != nil {
-		return nil, fmt.Errorf("insert failed to init transaction: %w", err)
-	}
-
-	data := map[string]interface{}{
-		"url":   "mUrl",
-		"image": "mImage",
-	}
-
-	id, err := ts.Insert(TABLE_NAME, data, "id")
-	if err != nil {
-		return nil, fmt.Errorf("insert failed to insert data: %w", err)
-	}
-
-	if err := ts.Commit(); err != nil {
-		return nil, fmt.Errorf("insert failed to commit transaction: %w", err)
-	}
-
-	return id, nil
+func build(db *sqlx.DB) (string, []interface{}, error) {
+	return visisql.NewSelectService(db).Build(schema.fields, schema.tableName, nil, [][]*visisql.Predicate{{
+		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{1}),
+	}}, nil, nil, nil)
 }
 
-func get(db *sqlx.DB, id interface{}) (*Site, error) {
-	predicates := [][]*visisql.Predicate{{
-		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
-	}}
+func query(db *sqlx.DB) ([]*Company, error) {
+	defer func() {
+		db.Exec(schema.drop)
+	}()
 
-	var site Site
-	if err := visisql.NewSelectService(db).Get([]string{"id", "url", "image"}, TABLE_NAME, nil, predicates, nil, &site); err != nil {
-		return nil, fmt.Errorf("get failed to fetch site: %w", err)
+	if _, err := db.Exec(schema.create); err != nil {
+		return nil, err
 	}
 
-	return &site, nil
+	if _, err := db.Exec(schema.mocks); err != nil {
+		return nil, err
+	}
+
+	var companies []*Company
+	if err := visisql.NewSelectService(db).Query(`SELECT * FROM company`, nil, &companies); err != nil {
+		return nil, err
+	}
+
+	return companies, nil
 }
 
-func update(db *sql.DB, id interface{}) error {
-	ts, err := visisql.NewTransactionService(db)
-	if err != nil {
-		return fmt.Errorf("update failed to init transaction: %w", err)
+func queryRow(db *sqlx.DB) (*Company, error) {
+	defer func() {
+		db.Exec(schema.drop)
+	}()
+
+	if _, err := db.Exec(schema.create); err != nil {
+		return nil, err
 	}
 
-	predicates := [][]*visisql.Predicate{{
-		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
-	}}
-
-	if err := ts.Update(TABLE_NAME, map[string]interface{}{"url": "url", "image": "image"}, predicates); err != nil {
-		return fmt.Errorf("update failed to update data: %w", err)
+	if _, err := db.Exec(schema.mocks); err != nil {
+		return nil, err
 	}
 
-	if err := ts.Commit(); err != nil {
-		return fmt.Errorf("update failed to commit transaction: %w", err)
+	var company Company
+	if err := visisql.NewSelectService(db).QueryRow(`SELECT * FROM company WHERE id = $1`, []interface{}{1}, &company); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return &company, nil
 }
 
-func remove(db *sql.DB, id interface{}) error {
-	ts, err := visisql.NewTransactionService(db)
-	if err != nil {
-		return fmt.Errorf("delete failed to init transaction: %w", err)
+func get(db *sqlx.DB) (*Company, error) {
+	defer func() {
+		db.Exec(schema.drop)
+	}()
+
+	if _, err := db.Exec(schema.create); err != nil {
+		return nil, err
 	}
 
-	predicates := [][]*visisql.Predicate{{
-		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
-	}}
-
-	if err := ts.Delete(TABLE_NAME, predicates); err != nil {
-		return fmt.Errorf("delete failed to delete row: %w", err)
+	if _, err := db.Exec(schema.mocks); err != nil {
+		return nil, err
 	}
 
-	if err := ts.Commit(); err != nil {
-		return fmt.Errorf("delete failed to commit transaction: %w", err)
+	var company Company
+	if err := visisql.NewSelectService(db).Get(schema.fields, schema.tableName, nil, [][]*visisql.Predicate{{
+		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{2}),
+	}}, nil, &company); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return &company, nil
 }
 
-func insertMultiple(db *sql.DB) error {
-	ts, err := visisql.NewTransactionService(db)
+func search(db *sqlx.DB) ([]*Company, int64, int64, int64, error) {
+	defer func() {
+		db.Exec(schema.drop)
+	}()
+
+	if _, err := db.Exec(schema.create); err != nil {
+		return nil, 0, 0, 0, err
+	}
+
+	if _, err := db.Exec(schema.mocks); err != nil {
+		return nil, 0, 0, 0, err
+	}
+
+	var companies []*Company
+
+	c, tc, pc, err := visisql.NewSelectService(db).Search(schema.fields, schema.tableName, nil, nil, nil, []*visisql.OrderBy{
+		visisql.NewOrderBy("id", visisql.OrderAsc),
+	}, nil, &companies)
 	if err != nil {
-		return fmt.Errorf("insert multiple failed to init transaction: %w", err)
+		return nil, 0, 0, 0, err
 	}
 
-	data := [][]interface{}{{
-		"url 1", "image 1",
-	}, {
-		"url 2", "image 2",
-	}, {
-		"url 3", "image 3",
-	}}
-
-	_, err = ts.InsertMultiple(TABLE_NAME, []string{"url", "image"}, data, nil)
-	if err != nil {
-		return fmt.Errorf("insert multiple failed to insert data: %w", err)
-	}
-
-	if err := ts.Commit(); err != nil {
-		return fmt.Errorf("insert multiple failed to commit transaction: %w", err)
-	}
-
-	return nil
-}
-
-func list(db *sqlx.DB) ([]*Site, error) {
-	var sites []*Site
-	if _, _, _, err := visisql.NewSelectService(db).Search([]string{"id", "url", "image"}, TABLE_NAME, nil, nil, nil, nil, nil, &sites); err != nil {
-		return nil, fmt.Errorf("list failed to fetch sites: %w", err)
-	}
-
-	return sites, nil
+	return companies, c, tc, pc, nil
 }
