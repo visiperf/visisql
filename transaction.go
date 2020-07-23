@@ -5,22 +5,32 @@ import (
 	"fmt"
 
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/jmoiron/sqlx"
 )
 
-type TransactionService struct {
+type TransactionService interface {
+	Insert(into string, values map[string]interface{}, returning interface{}) (interface{}, error)
+	InsertMultiple(into string, fields []string, values [][]interface{}, returning interface{}) ([]interface{}, error)
+	Update(table string, set map[string]interface{}, predicates [][]*Predicate) error
+	Delete(from string, predicates [][]*Predicate) error
+	Rollback() error
+	Commit() error
+}
+
+type transactionService struct {
 	tx *sql.Tx
 }
 
-func NewTransactionService(db *sql.DB) (*TransactionService, error) {
+func NewTransactionService(db *sqlx.DB) (TransactionService, error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return nil, fmt.Errorf("visisql transaction begin: %w", err)
 	}
 
-	return &TransactionService{tx: tx}, nil
+	return &transactionService{tx: tx}, nil
 }
 
-func (ts *TransactionService) Insert(into string, values map[string]interface{}, returning interface{}) (interface{}, error) {
+func (ts *transactionService) Insert(into string, values map[string]interface{}, returning interface{}) (interface{}, error) {
 	builder := sqlbuilder.PostgreSQL.NewInsertBuilder()
 
 	builder.InsertInto(into)
@@ -58,7 +68,7 @@ func (ts *TransactionService) Insert(into string, values map[string]interface{},
 	return resp, nil
 }
 
-func (ts *TransactionService) InsertMultiple(into string, fields []string, values [][]interface{}, returning interface{}) ([]interface{}, error) {
+func (ts *transactionService) InsertMultiple(into string, fields []string, values [][]interface{}, returning interface{}) ([]interface{}, error) {
 	builder := sqlbuilder.PostgreSQL.NewInsertBuilder()
 
 	builder.InsertInto(into)
@@ -103,7 +113,7 @@ func (ts *TransactionService) InsertMultiple(into string, fields []string, value
 	return resps, nil
 }
 
-func (ts *TransactionService) Update(table string, set map[string]interface{}, predicates [][]*Predicate) error {
+func (ts *transactionService) Update(table string, set map[string]interface{}, predicates [][]*Predicate) error {
 	builder := sqlbuilder.PostgreSQL.NewUpdateBuilder()
 
 	builder.Update(table)
@@ -133,7 +143,7 @@ func (ts *TransactionService) Update(table string, set map[string]interface{}, p
 	return nil
 }
 
-func (ts *TransactionService) Delete(from string, predicates [][]*Predicate) error {
+func (ts *transactionService) Delete(from string, predicates [][]*Predicate) error {
 	builder := sqlbuilder.PostgreSQL.NewDeleteBuilder()
 
 	builder.DeleteFrom(from)
@@ -156,7 +166,7 @@ func (ts *TransactionService) Delete(from string, predicates [][]*Predicate) err
 	return nil
 }
 
-func (ts *TransactionService) Rollback() error {
+func (ts *transactionService) Rollback() error {
 	if err := ts.tx.Rollback(); err != nil {
 		return fmt.Errorf("visisql rollback: %w", err)
 	}
@@ -164,7 +174,7 @@ func (ts *TransactionService) Rollback() error {
 	return nil
 }
 
-func (ts *TransactionService) Commit() error {
+func (ts *transactionService) Commit() error {
 	if err := ts.tx.Commit(); err != nil {
 		return fmt.Errorf("visisql commit: %w", err)
 	}
