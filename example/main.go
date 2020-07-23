@@ -10,7 +10,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/visiperf/visisql/v2"
+	"github.com/visiperf/visisql/v3"
 )
 
 type Phones []string

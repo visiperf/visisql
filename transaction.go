@@ -24,7 +24,7 @@ type transactionService struct {
 func NewTransactionService(db *sqlx.DB) (TransactionService, error) {
 	tx, err := db.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("visisql transaction begin: %w", err)
+		return nil, err
 	}
 
 	return &transactionService{tx: tx}, nil
@@ -52,16 +52,16 @@ func (ts *transactionService) Insert(into string, values map[string]interface{},
 		row := ts.tx.QueryRow(fmt.Sprintf("%s returning %s", query, returning), args...)
 		if err := row.Scan(&resp); err != nil {
 			if rErr := ts.tx.Rollback(); rErr != nil {
-				return nil, fmt.Errorf("visisql insert rollback: %w", rErr)
+				return nil, fmt.Errorf("visisql rollback: %w", rErr)
 			}
-			return nil, fmt.Errorf("visisql insert query: %w", &QueryError{err})
+			return nil, fmt.Errorf("visisql query: %w", &QueryError{err})
 		}
 	} else {
 		if _, err := ts.tx.Exec(query, args...); err != nil {
 			if rErr := ts.tx.Rollback(); rErr != nil {
-				return nil, fmt.Errorf("visisql insert rollback: %w", rErr)
+				return nil, fmt.Errorf("visisql rollback: %w", rErr)
 			}
-			return nil, fmt.Errorf("visisql insert query: %w", &QueryError{err})
+			return nil, fmt.Errorf("visisql query: %w", &QueryError{err})
 		}
 	}
 
@@ -83,7 +83,7 @@ func (ts *transactionService) InsertMultiple(into string, fields []string, value
 
 	stmt, err := ts.tx.Prepare(query)
 	if err != nil {
-		return nil, fmt.Errorf("visisql insert multiple statement preparation: %w", &QueryError{err})
+		return nil, fmt.Errorf("visisql statement prepare: %w", &QueryError{err})
 	}
 
 	var resps []interface{}
@@ -94,18 +94,18 @@ func (ts *transactionService) InsertMultiple(into string, fields []string, value
 			row := stmt.QueryRow(args...)
 			if err := row.Scan(&resp); err != nil {
 				if rErr := ts.tx.Rollback(); rErr != nil {
-					return nil, fmt.Errorf("visisql insert multiple rollback: %w", rErr)
+					return nil, fmt.Errorf("visisql rollback: %w", rErr)
 				}
-				return nil, fmt.Errorf("visisql insert multiple query: %w", &QueryError{err})
+				return nil, fmt.Errorf("visisql query: %w", &QueryError{err})
 			}
 
 			resps = append(resps, resp)
 		} else {
 			if _, err := stmt.Exec(args...); err != nil {
 				if rErr := ts.tx.Rollback(); rErr != nil {
-					return nil, fmt.Errorf("visisql insert multiple rollback: %w", rErr)
+					return nil, fmt.Errorf("visisql rollback: %w", rErr)
 				}
-				return nil, fmt.Errorf("visisql insert multiple query: %w", &QueryError{err})
+				return nil, fmt.Errorf("visisql query: %w", &QueryError{err})
 			}
 		}
 	}
@@ -127,7 +127,7 @@ func (ts *transactionService) Update(table string, set map[string]interface{}, p
 
 	sPs, err := predicatesToStrings(predicates, &builder.Cond)
 	if err != nil {
-		return fmt.Errorf("visisql update predicates: %w", err)
+		return err
 	}
 	builder.Where(sPs...)
 
@@ -135,9 +135,9 @@ func (ts *transactionService) Update(table string, set map[string]interface{}, p
 
 	if _, err := ts.tx.Exec(query, args...); err != nil {
 		if rErr := ts.tx.Rollback(); rErr != nil {
-			return fmt.Errorf("visisql update rollback: %w", rErr)
+			return fmt.Errorf("visisql rollback: %w", rErr)
 		}
-		return fmt.Errorf("visisql update query: %w", &QueryError{err})
+		return fmt.Errorf("visisql query: %w", &QueryError{err})
 	}
 
 	return nil
@@ -150,7 +150,7 @@ func (ts *transactionService) Delete(from string, predicates [][]*Predicate) err
 
 	sPs, err := predicatesToStrings(predicates, &builder.Cond)
 	if err != nil {
-		return fmt.Errorf("visisql delete predicates: %w", err)
+		return err
 	}
 	builder.Where(sPs...)
 
@@ -158,26 +158,18 @@ func (ts *transactionService) Delete(from string, predicates [][]*Predicate) err
 
 	if _, err := ts.tx.Exec(query, args...); err != nil {
 		if rErr := ts.tx.Rollback(); rErr != nil {
-			return fmt.Errorf("visisql delete rollback: %w", rErr)
+			return fmt.Errorf("visisql rollback: %w", rErr)
 		}
-		return fmt.Errorf("visisql delete query: %w", &QueryError{err})
+		return fmt.Errorf("visisql query: %w", &QueryError{err})
 	}
 
 	return nil
 }
 
 func (ts *transactionService) Rollback() error {
-	if err := ts.tx.Rollback(); err != nil {
-		return fmt.Errorf("visisql rollback: %w", err)
-	}
-
-	return nil
+	return ts.tx.Rollback()
 }
 
 func (ts *transactionService) Commit() error {
-	if err := ts.tx.Commit(); err != nil {
-		return fmt.Errorf("visisql commit: %w", err)
-	}
-
-	return nil
+	return ts.tx.Commit()
 }
