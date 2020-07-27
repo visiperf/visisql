@@ -2,6 +2,8 @@
 
 Package `visisql` provide two services `Select` and `Transaction` to help making PostgreSQL requests. `Select` service will assist you to build and scan queries, while `Transaction` will help you to insert, update and delete rows in your databases with SQL transactions (rollback, commit ...).
 
+Visisql use `github.com/huandu/go-sqlbuilder` to build SQL queries and use `github.com/jmoiron/sqlx` to map result with structs. For more informations, see documentations of each package.
+
 Table of contents
 =================
 
@@ -20,7 +22,7 @@ Table of contents
 
 Use `go get` to install this package.
 
-    go get github.com/visiperf/visisql
+    go get github.com/visiperf/visisql/v3
 
 
 ## Usage ##
@@ -37,8 +39,8 @@ and this structure :
 
 ```go
 type Company struct {
-    Id   int64  `sql:"id"`
-    Name string `sql:"name"`
+    Id   int64  `db:"id"`
+    Name string `db:"name"`
 }
 ```
 
@@ -47,7 +49,7 @@ type Company struct {
 Here is an example to demonstrate how to select the company with `id = 1` :
 
 ```go
-db, err := sql.Open(...)
+db, err := sqlx.Connect(...)
 
 var fields = []string{"c.id", "c.name"}
 
@@ -88,7 +90,7 @@ err := visisql.NewSelectService(db).Get(fields, from, joins, where, groupBy, &co
 Here is an example to demonstrate how to select the 2 first companies starting with `Company` :
 
 ```go
-db, err := sql.Open(...)
+db, err := sqlx.Connect(...)
 
 var fields = []string{"c.id", "c.name"}
 
@@ -126,7 +128,7 @@ limit 2
 
 var companies []*Company
 
-c, tc, pc, err := visisql.NewSelectService(db).List(fields, from, joins, where, groupBy, orderBy, pagination, &companies)
+c, tc, pc, err := visisql.NewSelectService(db).Search(fields, from, joins, where, groupBy, orderBy, pagination, &companies)
 
 /*
 
@@ -150,7 +152,7 @@ pc (page count) -> 2 (number of pages, with c elements per page)
 Here is an example to demonstrate how to insert a company in database :
 
 ```go
-db, err := sql.Open(...)
+db, err := sqlx.Connect(...)
 
 var into = "company"
 
@@ -184,7 +186,7 @@ err = ts.Commit() // all requests made with ts are executed now, Company 4 is no
 Here is an example to demonstrate how to insert multiple companies in database :
 
 ```go
-db, err := sql.Open(...)
+db, err := sqlx.Connect(...)
 
 var into = "company"
 
@@ -225,7 +227,7 @@ err = ts.Commit() // all requests made with ts are executed now, Companies 4 & 5
 Here is an example to demonstrate how to update the company with `id = 3` :
 
 ```go
-db, err := sql.Open(...)
+db, err := sqlx.Connect(...)
 
 var table = "company"
 
@@ -259,7 +261,7 @@ err = ts.Commit() // all requests made with ts are executed now, Company 3 is no
 Here is an example to demonstrate how to delete the company with `id = 3` :
 
 ```go
-db, err := sql.Open(...)
+db, err := sqlx.Connect(...)
 
 var from = "company"
 
@@ -352,4 +354,5 @@ err = ts.Commit() // all requests made with ts are executed now, Company 3 is no
 ## References ###
 
 * SQL builder for Go : [github.com/huandu/go-sqlbuilder](https://github.com/huandu/go-sqlbuilder)
-* mapstructure : [github.com/mitchellh/mapstructure](https://github.com/mitchellh/mapstructure)
+* SQLX library : [github.com/jmoiron/sqlx](https://github.com/jmoiron/sqlx)
+
