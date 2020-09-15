@@ -10,10 +10,10 @@ import (
 )
 
 type SelectService interface {
-	Build(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []OrderBy, pagination *Pagination) (string, []interface{}, error)
+	Build(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []OrderBy, pagination Pagination) (string, []interface{}, error)
 	Query(query string, args []interface{}, v interface{}) error
 	QueryRow(query string, args []interface{}, v interface{}) error
-	Search(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error)
+	Search(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []OrderBy, pagination Pagination, v interface{}) (int64, int64, int64, error)
 	Get(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, v interface{}) error
 }
 
@@ -25,7 +25,7 @@ func NewSelectService(db *sqlx.DB) SelectService {
 	return &selectService{db: db}
 }
 
-func (ss *selectService) Build(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []OrderBy, pagination *Pagination) (string, []interface{}, error) {
+func (ss *selectService) Build(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []OrderBy, pagination Pagination) (string, []interface{}, error) {
 	builder, err := ss.newBuilder(fields, from, joins, predicates, groupBy, orderBy, pagination)
 	if err != nil {
 		return "", nil, err
@@ -79,7 +79,7 @@ func (ss *selectService) QueryRow(query string, args []interface{}, v interface{
 	return nil
 }
 
-func (ss *selectService) Search(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []OrderBy, pagination *Pagination, v interface{}) (int64, int64, int64, error) {
+func (ss *selectService) Search(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []OrderBy, pagination Pagination, v interface{}) (int64, int64, int64, error) {
 	builderRs, err := ss.newBuilder(fields, from, joins, predicates, groupBy, orderBy, pagination)
 	if err != nil {
 		return 0, 0, 0, err
@@ -127,7 +127,7 @@ func (ss *selectService) Get(fields []string, from string, joins []*Join, predic
 	return ss.QueryRow(query, args, v)
 }
 
-func (ss *selectService) newBuilder(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []OrderBy, pagination *Pagination) (*sqlbuilder.SelectBuilder, error) {
+func (ss *selectService) newBuilder(fields []string, from string, joins []*Join, predicates [][]*Predicate, groupBy []string, orderBy []OrderBy, pagination Pagination) (*sqlbuilder.SelectBuilder, error) {
 	builder := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
 	builder.Select(fields...)
@@ -156,10 +156,10 @@ func (ss *selectService) newBuilder(fields []string, from string, joins []*Join,
 	builder.OrderBy(ob...)
 
 	if pagination != nil {
-		builder.Offset(pagination.Start)
+		builder.Offset(pagination.GetStart())
 
-		if pagination.Limit != 0 {
-			builder.Limit(pagination.Limit)
+		if pagination.GetLimit() != 0 {
+			builder.Limit(pagination.GetLimit())
 		}
 	}
 
