@@ -12,9 +12,9 @@ const (
 )
 
 type predicate struct {
-	field string
-	operator
-	values []interface{}
+	field    string
+	operator operator
+	values   []interface{}
 }
 
 func newPredicate(field string, operator operator, values []interface{}) *predicate {
