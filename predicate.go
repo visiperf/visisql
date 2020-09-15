@@ -14,69 +14,59 @@ var errOperatorIsNull = errors.New("predicate should not have value(s) when oper
 var errOperatorLessThan = errors.New("predicate must have only one value when operator is less than")
 var errOperatorGreaterThan = errors.New("predicate must have only one value when operator is greater than")
 
-type Operator string
-
 const (
-	OperatorIn          Operator = "IN"
-	OperatorEqual       Operator = "EQUALS"
-	OperatorLike        Operator = "LIKE"
-	OperatorIsNull      Operator = "IS NULL"
-	OperatorLessThan    Operator = "LESS THAN"
-	OperatorGreaterThan Operator = "GREATER THAN"
+	operatorIn          = "IN"
+	operatorEqual       = "EQUALS"
+	operatorLike        = "LIKE"
+	operatorIsNull      = "IS NULL"
+	operatorLessThan    = "LESS THAN"
+	operatorGreaterThan = "GREATER THAN"
 )
 
-type Predicate struct {
-	Field    string        `json:"field"`
-	Operator Operator      `json:"operator"`
-	Values   []interface{} `json:"values"`
+type Predicate interface {
+	GetField() string
+	GetValues() []interface{}
+	IsOperator(operator string) bool
 }
 
-func NewPredicate(field string, operator Operator, values []interface{}) *Predicate {
-	return &Predicate{Field: field, Operator: operator, Values: values}
-}
-
-func (p *Predicate) IsOperator(operator Operator) bool {
-	return p.Operator == operator
-}
-
-func predicatesToStrings(predicates [][]*Predicate, cond *sqlbuilder.Cond) ([]string, error) {
+func predicatesToStrings(predicates [][]Predicate, cond *sqlbuilder.Cond) ([]string, error) {
 	var andExprs []string
 	for _, pAnd := range predicates {
 
 		var orExprs []string
 		for _, pOr := range pAnd {
-			if pOr.IsOperator(OperatorIn) {
-				orExprs = append(orExprs, cond.In(pOr.Field, pOr.Values...))
+			if pOr.IsOperator(operatorIn) {
+				orExprs = append(orExprs, cond.In(pOr.GetField(), pOr.GetValues()...))
 			}
-			if pOr.IsOperator(OperatorEqual) {
-				if len(pOr.Values) != 1 {
+			if pOr.IsOperator(operatorEqual) {
+				if len(pOr.GetValues()) != 1 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorEqual})
 				}
-				orExprs = append(orExprs, cond.Equal(pOr.Field, pOr.Values[0]))
+				orExprs = append(orExprs, cond.Equal(pOr.GetField(), pOr.GetValues()[0]))
 			}
-			if pOr.IsOperator(OperatorLike) {
-				if len(pOr.Values) != 1 {
+			if pOr.IsOperator(operatorLike) {
+				if len(pOr.GetValues()) != 1 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorLike})
 				}
-				orExprs = append(orExprs, cond.Like(pOr.Field, pOr.Values[0]))
+				orExprs = append(orExprs, cond.Like(pOr.GetField(), pOr.GetValues()[0]))
 			}
-			if pOr.IsOperator(OperatorIsNull) {
-				if len(pOr.Values) > 0 {
+			if pOr.IsOperator(operatorIsNull) {
+				if len(pOr.GetValues()) > 0 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorIsNull})
 				}
-				orExprs = append(orExprs, cond.IsNull(pOr.Field))
+				orExprs = append(orExprs, cond.IsNull(pOr.GetField()))
 			}
-			if pOr.IsOperator(OperatorLessThan) {
-				if len(pOr.Values) != 1 {
+			if pOr.IsOperator(operatorLessThan) {
+				if len(pOr.GetValues()) != 1 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorLessThan})
 				}
-				orExprs = append(orExprs, cond.LessThan(pOr.Field, pOr.Values[0]))
+				orExprs = append(orExprs, cond.LessThan(pOr.GetField(), pOr.GetValues()[0]))
 			}
-			if pOr.IsOperator(OperatorGreaterThan) {
-				if len(pOr.Values) != 1 {
+			if pOr.IsOperator(operatorGreaterThan) {
+				if len(pOr.GetValues()) != 1 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorGreaterThan})
 				}
-				orExprs = append(orExprs, cond.GreaterThan(pOr.Field, pOr.Values[0]))
+				orExprs = append(orExprs, cond.GreaterThan(pOr.GetField(), pOr.GetValues()[0]))
 			}
 		}
 

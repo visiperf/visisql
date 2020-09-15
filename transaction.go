@@ -11,8 +11,8 @@ import (
 type TransactionService interface {
 	Insert(into string, values map[string]interface{}, returning interface{}) (interface{}, error)
 	InsertMultiple(into string, fields []string, values [][]interface{}, returning interface{}) ([]interface{}, error)
-	Update(table string, set map[string]interface{}, predicates [][]*Predicate) error
-	Delete(from string, predicates [][]*Predicate) error
+	Update(table string, set map[string]interface{}, predicates [][]Predicate) error
+	Delete(from string, predicates [][]Predicate) error
 	Rollback() error
 	Commit() error
 }
@@ -113,7 +113,7 @@ func (ts *transactionService) InsertMultiple(into string, fields []string, value
 	return resps, nil
 }
 
-func (ts *transactionService) Update(table string, set map[string]interface{}, predicates [][]*Predicate) error {
+func (ts *transactionService) Update(table string, set map[string]interface{}, predicates [][]Predicate) error {
 	builder := sqlbuilder.PostgreSQL.NewUpdateBuilder()
 
 	builder.Update(table)
@@ -143,7 +143,7 @@ func (ts *transactionService) Update(table string, set map[string]interface{}, p
 	return nil
 }
 
-func (ts *transactionService) Delete(from string, predicates [][]*Predicate) error {
+func (ts *transactionService) Delete(from string, predicates [][]Predicate) error {
 	builder := sqlbuilder.PostgreSQL.NewDeleteBuilder()
 
 	builder.DeleteFrom(from)

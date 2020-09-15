@@ -135,8 +135,8 @@ func main() {
 }
 
 func build(db *sqlx.DB, id interface{}) (string, []interface{}, error) {
-	return visisql.NewSelectService(db).Build(schema.fields, schema.tableName, nil, [][]*visisql.Predicate{{
-		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
+	return visisql.NewSelectService(db).Build(schema.fields, schema.tableName, nil, [][]visisql.Predicate{{
+		newPredicate("id", operatorEqual, []interface{}{id}),
 	}}, nil, nil, nil)
 }
 
@@ -196,8 +196,8 @@ func get(db *sqlx.DB, id interface{}) (*Company, error) {
 	}
 
 	var company Company
-	if err := visisql.NewSelectService(db).Get(schema.fields, schema.tableName, nil, [][]*visisql.Predicate{{
-		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
+	if err := visisql.NewSelectService(db).Get(schema.fields, schema.tableName, nil, [][]visisql.Predicate{{
+		newPredicate("id", operatorEqual, []interface{}{id}),
 	}}, nil, &company); err != nil {
 		return nil, err
 	}
@@ -279,8 +279,8 @@ func update(db *sqlx.DB, id interface{}) error {
 
 	if err := tx.Update(schema.tableName, map[string]interface{}{
 		`name`: `Microsoft`,
-	}, [][]*visisql.Predicate{{
-		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
+	}, [][]visisql.Predicate{{
+		newPredicate("id", operatorEqual, []interface{}{id}),
 	}}); err != nil {
 		return err
 	}
@@ -306,8 +306,8 @@ func remove(db *sqlx.DB, id interface{}) error {
 		return err
 	}
 
-	if err := tx.Delete(schema.tableName, [][]*visisql.Predicate{{
-		visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{id}),
+	if err := tx.Delete(schema.tableName, [][]visisql.Predicate{{
+		newPredicate("id", operatorEqual, []interface{}{id}),
 	}}); err != nil {
 		return err
 	}
