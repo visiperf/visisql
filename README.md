@@ -22,7 +22,7 @@ Table of contents
 
 Use `go get` to install this package.
 
-    go get github.com/visiperf/visisql/v3
+    go get github.com/visiperf/visisql/v4
 
 
 ## Usage ##
