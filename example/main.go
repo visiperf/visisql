@@ -220,8 +220,8 @@ func search(db *sqlx.DB) ([]*Company, int64, int64, int64, error) {
 
 	var companies []*Company
 
-	c, tc, pc, err := visisql.NewSelectService(db).Search(schema.fields, schema.tableName, nil, nil, nil, []*visisql.OrderBy{
-		visisql.NewOrderBy("id", visisql.OrderAsc),
+	c, tc, pc, err := visisql.NewSelectService(db).Search(schema.fields, schema.tableName, nil, nil, nil, []visisql.OrderBy{
+		newOrderBy("id", orderAsc),
 	}, nil, &companies)
 	if err != nil {
 		return nil, 0, 0, 0, err
