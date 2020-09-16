@@ -59,8 +59,8 @@ var joins = []*visisql.Join{
     visisql.NewJoin(visisql.InnerJoin, "user u", "u.company_id = c.id"),
 }
 
-var where = [][]*visisql.Predicate{{
-    visisql.NewPredicate("c.id", visisql.OperatorEqual, []interface{}{1}),
+var where = [][]visisql.Predicate{{
+    visitypes.NewPredicate("c.id", visitypes.OperatorEqual, []interface{}{1}),
 }}
 
 var groupBy = []string{"c.id"}
@@ -100,17 +100,17 @@ var joins = []*visisql.Join{
     visisql.NewJoin(visisql.InnerJoin, "user u", "u.company_id = c.id"),
 }
 
-var where = [][]*visisql.Predicate{{
-    visisql.NewPredicate("c.name", visisql.OperatorLike, []interface{}{"Company%"}),
+var where = [][]visisql.Predicate{{
+    visitypes.NewPredicate("c.name", visitypes.OperatorLike, []interface{}{"Company%"}),
 }}
 
 var groupBy = []string{"c.id"}
 
-var orderBy = []*visisql.OrderBy{
-  	visisql.NewOrderBy("c.id", visisql.OrderAsc),
+var orderBy = []visisql.OrderBy{
+  	visitypes.NewOrderBy("c.id", visitypes.OrderAsc),
 }
 
-var pagination = visisql.NewPagination(0, 2)
+var pagination = visitypes.NewPagination(0, 2)
 
 /*
 
@@ -233,8 +233,8 @@ var table = "company"
 
 var set = map[string]interface{}{"name": "Company 4"}
 
-var where = [][]*visisql.Predicate{{
-    visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{3}),
+var where = [][]visisql.Predicate{{
+    visitypes.NewPredicate("id", visitypes.OperatorEqual, []interface{}{3}),
 }}
 
 /*
@@ -265,8 +265,8 @@ db, err := sqlx.Connect(...)
 
 var from = "company"
 
-var where = [][]*visisql.Predicate{{
-    visisql.NewPredicate("id", visisql.OperatorEqual, []interface{}{3}),
+var where = [][]visisql.Predicate{{
+    visitypes.NewPredicate("id", visitypes.OperatorEqual, []interface{}{3}),
 }}
 
 /*
@@ -289,7 +289,7 @@ err = ts.Commit() // all requests made with ts are executed now, Company 3 is no
 
 ## FAQ
 
-- Why `predicates` params is always typed as `[][]*visisql.Predicate` ?
+- Why `predicates` params is always typed as `[][]visisql.Predicate` ?
 
 > `predicates` params is two dimentional slice to be able to make request with AND / OR operators.
 >
@@ -300,10 +300,10 @@ err = ts.Commit() // all requests made with ts are executed now, Company 3 is no
 > example with `AND` :
 >
 > ```go
-> [][]*visisql.Predicate{{
->   visisql.NewPredicate("c.name", visisql.OperatorLike, []interface{}{"%@visiperf.io"})
+> [][]visisql.Predicate{{
+>   	visitypes.NewPredicate("c.name", visitypes.OperatorLike, []interface{}{"%@visiperf.io"})
 > }, {
->   visisql.NewPredicate("u.id", visisql.OperatorEqual, []interface{}{1})
+>   	visitypes.NewPredicate("u.id", visitypes.OperatorEqual, []interface{}{1})
 > }}
 > ```
 >
@@ -318,9 +318,9 @@ err = ts.Commit() // all requests made with ts are executed now, Company 3 is no
 > example with `OR` :
 >
 > ```go
-> [][]*visisql.Predicate{{
->   visisql.NewPredicate("c.id", visisql.OperatorEqual, []interface{}{1}),
->   visisql.NewPredicate("c.name", visisql.OperatorEqual, []interface{}{"Visiperf"}),
+> [][]visisql.Predicate{{
+>   	visitypes.NewPredicate("c.id", visitypes.OperatorEqual, []interface{}{1}),
+>   	visitypes.NewPredicate("c.name", visitypes.OperatorEqual, []interface{}{"Visiperf"}),
 > }}
 > ```
 >
@@ -337,11 +337,11 @@ err = ts.Commit() // all requests made with ts are executed now, Company 3 is no
 > example :
 >
 > ```go
-> [][]*visisql.Predicate{{
->   visisql.NewPredicate("c.id", visisql.OperatorEqual, []interface{}{1}),
->   visisql.NewPredicate("c.name", visisql.OperatorEqual, []interface{}{"Visiperf"}),
+> [][]visisql.Predicate{{
+>   	visitypes.NewPredicate("c.id", visitypes.OperatorEqual, []interface{}{1}),
+>   	visitypes.NewPredicate("c.name", visitypes.OperatorEqual, []interface{}{"Visiperf"}),
 > }, {
->   visisql.NewPredicate("u.id", visisql.OperatorEqual, []interface{}{1})
+>   	visitypes.NewPredicate("u.id", visitypes.OperatorEqual, []interface{}{1})
 > }}
 > ```
 >
