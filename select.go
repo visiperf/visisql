@@ -2,9 +2,10 @@ package visisql
 
 import (
 	"database/sql"
+	"reflect"
+
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/mitchellh/mapstructure"
-	"reflect"
 )
 
 type SelectService struct {
@@ -109,6 +110,10 @@ func (ss *SelectService) List(fields []string, from string, joins []*Join, predi
 
 	if err := ss.Query(queryRs, argsRs, v); err != nil {
 		return 0, 0, 0, err
+	}
+
+	if reflect.ValueOf(v).Elem().IsNil() {
+		return 0, 0, 0, nil
 	}
 
 	builderRs.Select("count(*) over () as total_count")
