@@ -13,6 +13,7 @@ var errOperatorLike = errors.New("predicate must have only one value when operat
 var errOperatorIsNull = errors.New("predicate should not have value(s) when operator is null")
 var errOperatorLessThan = errors.New("predicate must have only one value when operator is less than")
 var errOperatorGreaterThan = errors.New("predicate must have only one value when operator is greater than")
+var errOperatorBetween = errors.New("predicate must have two values when operator is between")
 
 type Operator string
 
@@ -23,6 +24,7 @@ const (
 	OperatorIsNull      Operator = "IS NULL"
 	OperatorLessThan    Operator = "LESS THAN"
 	OperatorGreaterThan Operator = "GREATER THAN"
+	OperatorBetween     Operator = "BETWEEN"
 )
 
 type Predicate struct {
@@ -77,6 +79,12 @@ func predicatesToStrings(predicates [][]*Predicate, cond *sqlbuilder.Cond) ([]st
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorGreaterThan})
 				}
 				orExprs = append(orExprs, cond.GreaterThan(pOr.Field, pOr.Values[0]))
+			}
+			if pOr.IsOperator(OperatorBetween) {
+				if len(pOr.Values) != 2 {
+					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorBetween})
+				}
+				orExprs = append(orExprs, cond.Between(pOr.Field, pOr.Values[0], pOr.Values[1]))
 			}
 		}
 
