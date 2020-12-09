@@ -31,14 +31,24 @@ type Predicate struct {
 	Field    string        `json:"field"`
 	Operator Operator      `json:"operator"`
 	Values   []interface{} `json:"values"`
+	Funcs    []string
 }
 
-func NewPredicate(field string, operator Operator, values []interface{}) *Predicate {
-	return &Predicate{Field: field, Operator: operator, Values: values}
+func NewPredicate(field string, operator Operator, values []interface{}, funcs ...string) *Predicate {
+	return &Predicate{Field: field, Operator: operator, Values: values, Funcs: funcs}
 }
 
 func (p *Predicate) IsOperator(operator Operator) bool {
 	return p.Operator == operator
+}
+
+func (p *Predicate) wrapFuncs(val string) string {
+	var s = "%s"
+	for _, f := range p.Funcs {
+		s = fmt.Sprintf("%s(%s)", f, s)
+	}
+
+	return fmt.Sprintf(s, val)
 }
 
 func predicatesToStrings(predicates [][]*Predicate, cond *sqlbuilder.Cond) ([]string, error) {
@@ -54,7 +64,7 @@ func predicatesToStrings(predicates [][]*Predicate, cond *sqlbuilder.Cond) ([]st
 				if len(pOr.Values) != 1 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorEqual})
 				}
-				orExprs = append(orExprs, cond.Equal(pOr.Field, pOr.Values[0]))
+				orExprs = append(orExprs, fmt.Sprintf("%s = %s", sqlbuilder.Escape(pOr.Field), cond.Args.Add(pOr.Values[0])))
 			}
 			if pOr.IsOperator(OperatorLike) {
 				if len(pOr.Values) != 1 {
