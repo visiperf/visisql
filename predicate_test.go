@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// @todo: use assert and add message in TestWrapFuncs
 func TestWrapFuncs(t *testing.T) {
 	type in struct {
 		predicate *Predicate
@@ -20,48 +19,42 @@ func TestWrapFuncs(t *testing.T) {
 	}
 
 	type test struct {
-		in  *in
-		out *out
+		message string
+		in      *in
+		out     *out
 	}
 
 	var tests = []*test{{
+		message: "without func",
 		in: &in{
-			predicate: NewPredicate("table.id", OperatorEqual, []interface{}{1}),
+			predicate: &Predicate{},
 			val:       "table.id",
 		},
 		out: &out{
 			res: "table.id",
 		},
 	}, {
+		message: "with one func",
 		in: &in{
-			predicate: NewPredicate("table.id", OperatorEqual, []interface{}{1}, "unaccent"),
+			predicate: &Predicate{Funcs: []string{"unaccent"}},
 			val:       "table.id",
 		},
 		out: &out{
 			res: "unaccent(table.id)",
 		},
 	}, {
+		message: "with multiple funcs",
 		in: &in{
-			predicate: NewPredicate("table.id", OperatorEqual, []interface{}{1}, "unaccent", "lower"),
+			predicate: &Predicate{Funcs: []string{"unaccent", "lower"}},
 			val:       "table.id",
 		},
 		out: &out{
 			res: "lower(unaccent(table.id))",
 		},
-	}, {
-		in: &in{
-			predicate: NewPredicate("table.id", OperatorEqual, []interface{}{1}, "unaccent", "lower"),
-			val:       "$1",
-		},
-		out: &out{
-			res: "lower(unaccent($1))",
-		},
 	}}
 
 	for _, test := range tests {
-		if res := test.in.predicate.wrapFuncs(test.in.val); res != test.out.res {
-			t.Errorf("resp was incorrect, got: %s, want: %s", res, test.out.res)
-		}
+		assert.Equal(t, test.out.res, test.in.predicate.wrapFuncs(test.in.val), test.message)
 	}
 }
 
