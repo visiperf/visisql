@@ -31,14 +31,24 @@ type Predicate struct {
 	Field    string        `json:"field"`
 	Operator Operator      `json:"operator"`
 	Values   []interface{} `json:"values"`
+	Funcs    []string
 }
 
-func NewPredicate(field string, operator Operator, values []interface{}) *Predicate {
-	return &Predicate{Field: field, Operator: operator, Values: values}
+func NewPredicate(field string, operator Operator, values []interface{}, funcs ...string) *Predicate {
+	return &Predicate{Field: field, Operator: operator, Values: values, Funcs: funcs}
 }
 
 func (p *Predicate) IsOperator(operator Operator) bool {
 	return p.Operator == operator
+}
+
+func (p *Predicate) wrapFuncs(val string) string {
+	var s = "%s"
+	for _, f := range p.Funcs {
+		s = fmt.Sprintf("%s(%s)", f, s)
+	}
+
+	return fmt.Sprintf(s, val)
 }
 
 func predicatesToStrings(predicates [][]*Predicate, cond *sqlbuilder.Cond) ([]string, error) {
@@ -48,43 +58,49 @@ func predicatesToStrings(predicates [][]*Predicate, cond *sqlbuilder.Cond) ([]st
 		var orExprs []string
 		for _, pOr := range pAnd {
 			if pOr.IsOperator(OperatorIn) {
-				orExprs = append(orExprs, cond.In(pOr.Field, pOr.Values...))
+				vs := make([]string, 0, len(pOr.Values))
+
+				for _, v := range pOr.Values {
+					vs = append(vs, pOr.wrapFuncs(cond.Args.Add(v)))
+				}
+
+				orExprs = append(orExprs, fmt.Sprintf("%s IN (%s)", pOr.wrapFuncs(sqlbuilder.Escape(pOr.Field)), strings.Join(vs, ", ")))
 			}
 			if pOr.IsOperator(OperatorEqual) {
 				if len(pOr.Values) != 1 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorEqual})
 				}
-				orExprs = append(orExprs, cond.Equal(pOr.Field, pOr.Values[0]))
+				orExprs = append(orExprs, fmt.Sprintf("%s = %s", pOr.wrapFuncs(sqlbuilder.Escape(pOr.Field)), pOr.wrapFuncs(cond.Args.Add(pOr.Values[0]))))
 			}
 			if pOr.IsOperator(OperatorLike) {
 				if len(pOr.Values) != 1 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorLike})
 				}
-				orExprs = append(orExprs, cond.Like(pOr.Field, pOr.Values[0]))
+				orExprs = append(orExprs, fmt.Sprintf("%s LIKE %s", pOr.wrapFuncs(sqlbuilder.Escape(pOr.Field)), pOr.wrapFuncs(cond.Args.Add(pOr.Values[0]))))
 			}
 			if pOr.IsOperator(OperatorIsNull) {
 				if len(pOr.Values) > 0 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorIsNull})
 				}
-				orExprs = append(orExprs, cond.IsNull(pOr.Field))
+				orExprs = append(orExprs, fmt.Sprintf("%s IS NULL", pOr.wrapFuncs(sqlbuilder.Escape(pOr.Field))))
 			}
 			if pOr.IsOperator(OperatorLessThan) {
 				if len(pOr.Values) != 1 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorLessThan})
 				}
-				orExprs = append(orExprs, cond.LessThan(pOr.Field, pOr.Values[0]))
+				orExprs = append(orExprs, fmt.Sprintf("%s < %s", pOr.wrapFuncs(sqlbuilder.Escape(pOr.Field)), pOr.wrapFuncs(cond.Args.Add(pOr.Values[0]))))
 			}
 			if pOr.IsOperator(OperatorGreaterThan) {
 				if len(pOr.Values) != 1 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorGreaterThan})
 				}
-				orExprs = append(orExprs, cond.GreaterThan(pOr.Field, pOr.Values[0]))
+				orExprs = append(orExprs, fmt.Sprintf("%s > %s", pOr.wrapFuncs(sqlbuilder.Escape(pOr.Field)), pOr.wrapFuncs(cond.Args.Add(pOr.Values[0]))))
 			}
 			if pOr.IsOperator(OperatorBetween) {
 				if len(pOr.Values) != 2 {
 					return nil, fmt.Errorf("visisql predicates: %w", &QueryError{errOperatorBetween})
 				}
-				orExprs = append(orExprs, cond.Between(pOr.Field, pOr.Values[0], pOr.Values[1]))
+				orExprs = append(orExprs, fmt.Sprintf("%s BETWEEN %s AND %s", pOr.wrapFuncs(sqlbuilder.Escape(pOr.Field)), pOr.wrapFuncs(cond.Args.Add(pOr.Values[0])), pOr.wrapFuncs(cond.Args.Add(pOr.Values[1]))))
 			}
 		}
 
