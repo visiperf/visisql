@@ -100,7 +100,7 @@ func (ss *selectService) Search(fields []string, from string, joins []*Join, pre
 	builderC := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
 	pageCount := "1 as page_count"
-	if pagination != nil && pagination.Limit != 0 {
+	if pagination != nil && pagination.Limit > 0 {
 		pageCount = fmt.Sprintf("ceil(total_count::decimal / %d)::integer as page_count", pagination.Limit)
 	}
 
@@ -163,7 +163,7 @@ func (ss *selectService) newBuilder(fields []string, from string, joins []*Join,
 	if pagination != nil {
 		builder.Offset(pagination.Start)
 
-		if pagination.Limit != 0 {
+		if pagination.Limit > 0 {
 			builder.Limit(pagination.Limit)
 		}
 	}
