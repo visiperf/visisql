@@ -95,6 +95,10 @@ func (ss *selectService) Search(fields []string, from string, joins []*Join, pre
 		return 0, 0, 0, nil
 	}
 
+	if reflect.ValueOf(v).Elem().IsNil() {
+		return 0, 0, 0, nil
+	}
+
 	builderRs.Select("count(*) over () as total_count")
 
 	builderC := sqlbuilder.PostgreSQL.NewSelectBuilder()
